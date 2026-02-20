@@ -133,7 +133,7 @@ const JOB_STATUS = Object.freeze({
 const BOOKING_STATUS = Object.freeze({
     PENDING: 'pending',
     CONFIRMED: 'confirmed',
-    IN_PROGRESS: 'in_progress',
+    IN_PROGRESS: 'in-progress',
     COMPLETED: 'completed',
     CANCELLED: 'cancelled'
 });
@@ -205,6 +205,7 @@ const SUCCESS_MESSAGES = Object.freeze({
     EMAIL_VERIFIED: 'Email verified successfully',
     PROFILE_UPDATED: 'Profile updated successfully',
     USER_CREATED: 'User created successfully',
+    USER_UPDATED: 'User updated successfully',
     USER_BLOCKED: 'User blocked successfully',
     USER_UNBLOCKED: 'User unblocked successfully',
     USER_DELETED: 'User deleted successfully',
