@@ -220,6 +220,63 @@ class UserService {
     }
 
     /**
+     * Update user by Admin
+     * @param {string} userId - User ID to update
+     * @param {Object} updateData - Update data
+     * @param {string} adminId - Admin performing the action
+     * @returns {Promise<Object>} Updated user
+     */
+    async updateUserByAdmin(userId, updateData, adminId) {
+        const user = await User.findById(userId);
+
+        if (!user) {
+            throw { statusCode: 404, message: ERROR_MESSAGES.USER_NOT_FOUND };
+        }
+
+        // Prevent admin from changing their own role
+        if (userId === adminId && updateData.role && updateData.role !== user.role) {
+            throw { statusCode: 400, message: 'You cannot change your own role' };
+        }
+
+        // Allowed fields for admin to update
+        const allowedUpdates = ['firstName', 'lastName', 'email', 'phone', 'address', 'role', 'status'];
+        
+        // Filter only allowed fields
+        Object.keys(updateData).forEach(key => {
+            if (allowedUpdates.includes(key)) {
+                user[key] = updateData[key];
+            }
+        });
+
+        // If role is being changed to employee, set up employee profile
+        if (updateData.role === ROLES.EMPLOYEE && !user.employeeProfile) {
+            user.employeeProfile = {
+                status: EMPLOYEE_STATUS.PENDING,
+                serviceCategories: [],
+                experience: 0
+            };
+        }
+
+        // If employee profile status is being updated
+        if (updateData.employeeStatus && user.role === ROLES.EMPLOYEE) {
+            user.employeeProfile = user.employeeProfile || {};
+            user.employeeProfile.status = updateData.employeeStatus;
+        }
+
+        // Update permissions based on new role if role changed
+        if (updateData.role) {
+            user.permissions = ROLE_PERMISSIONS[updateData.role];
+        }
+
+        await user.save();
+
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        return userResponse;
+    }
+
+    /**
      * Block user (Admin only)
      * @param {string} userId - User ID to block
      * @param {string} adminId - Admin performing the action

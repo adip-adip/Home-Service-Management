@@ -3,6 +3,7 @@
  * Handles booking-related business logic
  */
 
+const mongoose = require('mongoose');
 const { Booking, User } = require('../modules');
 const { BOOKING_STATUS, ERROR_MESSAGES, ROLES, EMPLOYEE_STATUS } = require('../config/constant.config');
 
@@ -99,7 +100,8 @@ class BookingService {
     async getBookingById(bookingId) {
         const booking = await Booking.findById(bookingId)
             .populate('customer', 'firstName lastName email phone address')
-            .populate('employee', 'firstName lastName email phone avatar employeeProfile');
+            .populate('employee', 'firstName lastName email phone avatar employeeProfile')
+            .populate('review', 'rating text createdAt');
 
         if (!booking) {
             throw { statusCode: 404, message: 'Booking not found' };
@@ -127,6 +129,7 @@ class BookingService {
         const [bookings, total] = await Promise.all([
             Booking.find(query)
                 .populate('employee', 'firstName lastName email phone avatar employeeProfile')
+                .populate('review', 'rating text createdAt')
                 .sort({ scheduledDate: -1 })
                 .skip(skip)
                 .limit(parseInt(limit)),
@@ -308,6 +311,7 @@ class BookingService {
         }
 
         booking.status = BOOKING_STATUS.IN_PROGRESS;
+        booking.startedAt = new Date();
         booking.statusHistory.push({
             status: BOOKING_STATUS.IN_PROGRESS,
             changedAt: new Date(),
@@ -336,8 +340,10 @@ class BookingService {
             throw { statusCode: 403, message: 'Not authorized to complete this booking' };
         }
 
-        if (booking.status !== BOOKING_STATUS.IN_PROGRESS) {
-            throw { statusCode: 400, message: 'Only in-progress bookings can be completed' };
+        // Accept both 'in-progress' and 'in_progress' for backward compatibility
+        const validInProgressStatuses = [BOOKING_STATUS.IN_PROGRESS, 'in_progress', 'in-progress'];
+        if (!validInProgressStatuses.includes(booking.status)) {
+            throw { statusCode: 400, message: `Only in-progress bookings can be completed. Current status: ${booking.status}` };
         }
 
         const { finalPrice, notes } = completionData;
@@ -345,7 +351,17 @@ class BookingService {
             booking.finalPrice = finalPrice;
         }
 
-        await booking.complete(employeeId, notes);
+        // Explicitly set status to completed
+        booking.status = BOOKING_STATUS.COMPLETED;
+        booking.completedAt = new Date();
+        booking.completionNotes = notes || '';
+        booking.statusHistory.push({
+            status: BOOKING_STATUS.COMPLETED,
+            changedAt: new Date(),
+            changedBy: employeeId,
+            notes: notes || 'Job completed'
+        });
+        await booking.save();
 
         // Update employee completed jobs count
         await User.findByIdAndUpdate(employeeId, {
@@ -375,6 +391,7 @@ class BookingService {
             Booking.find(query)
                 .populate('customer', 'firstName lastName email phone')
                 .populate('employee', 'firstName lastName email phone employeeProfile')
+                .populate('review', 'rating text createdAt')
                 .sort(sort)
                 .skip(skip)
                 .limit(parseInt(limit)),
@@ -407,6 +424,141 @@ class BookingService {
         }).select('firstName lastName email phone avatar employeeProfile');
 
         return employees;
+    }
+
+    /**
+     * Submit a review for a completed booking
+     * @param {string} bookingId - Booking ID
+     * @param {string} customerId - Customer ID
+     * @param {Object} reviewData - Review data with rating and text
+     * @returns {Promise<Object>} Booking with review reference
+     */
+    async submitReview(bookingId, customerId, reviewData) {
+        const { rating, text } = reviewData;
+
+        // Validate rating
+        if (!rating || rating < 1 || rating > 5) {
+            throw { statusCode: 400, message: 'Rating must be between 1 and 5' };
+        }
+
+        // Validate review text
+        if (!text || text.trim().length < 10) {
+            throw { statusCode: 400, message: 'Review must be at least 10 characters long' };
+        }
+
+        if (text.length > 1000) {
+            throw { statusCode: 400, message: 'Review cannot exceed 1000 characters' };
+        }
+
+        // Get booking
+        const booking = await Booking.findById(bookingId)
+            .populate('customer')
+            .populate('employee');
+
+        if (!booking) {
+            throw { statusCode: 404, message: 'Booking not found' };
+        }
+
+        // Verify customer owns this booking
+        if (booking.customer._id.toString() !== customerId) {
+            throw { statusCode: 403, message: 'Only the customer can review this booking' };
+        }
+
+        // Verify booking is completed
+        if (booking.status !== BOOKING_STATUS.COMPLETED) {
+            throw { statusCode: 400, message: 'Only completed bookings can be reviewed' };
+        }
+
+        // Check if review already exists
+        if (booking.review) {
+            throw { statusCode: 400, message: 'Review already submitted for this booking' };
+        }
+
+        // Create review
+        const { Review } = require('../modules');
+        const review = await Review.create({
+            booking: bookingId,
+            customer: customerId,
+            employee: booking.employee._id,
+            rating,
+            text: text.trim(),
+            isPublished: true,
+            isApproved: true
+        });
+
+        // Update booking with review reference
+        booking.review = review._id;
+        await booking.save();
+
+        // Return booking with populated review
+        return await Booking.findById(bookingId)
+            .populate({
+                path: 'review',
+                select: 'rating text createdAt'
+            })
+            .populate('customer', 'firstName lastName email phone avatar')
+            .populate('employee', 'firstName lastName email phone avatar employeeProfile');
+    }
+
+    /**
+     * Get reviews for an employee
+     * @param {string} employeeId - Employee ID
+     * @param {Object} options - Query options (pagination, filters)
+     * @returns {Promise<Object>} Reviews with pagination
+     */
+    async getEmployeeReviews(employeeId, options = {}) {
+        const { Review } = require('../modules');
+        const page = options.page || 1;
+        const limit = options.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const reviews = await Review.find({
+            employee: employeeId,
+            isPublished: true,
+            isApproved: true
+        })
+            .populate('customer', 'firstName lastName avatar')
+            .populate('booking', 'serviceCategory scheduledDate')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Review.countDocuments({
+            employee: employeeId,
+            isPublished: true,
+            isApproved: true
+        });
+
+        // Calculate average rating
+        const avgRatingResult = await Review.aggregate([
+            {
+                $match: {
+                    employee: new mongoose.Types.ObjectId(employeeId),
+                    isPublished: true,
+                    isApproved: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$employee',
+                    averageRating: { $avg: '$rating' },
+                    totalReviews: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const averageRating = avgRatingResult[0]?.averageRating || 0;
+
+        return {
+            reviews,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            },
+            averageRating: Math.round(averageRating * 10) / 10
+        };
     }
 }
 
