@@ -223,6 +223,48 @@ class BookingController {
             next(error);
         }
     }
+
+    /**
+     * Submit a review for a completed booking
+     * PATCH /bookings/:bookingId/review
+     */
+    async submitReview(req, res, next) {
+        try {
+            const booking = await bookingService.submitReview(
+                req.params.bookingId,
+                req.user.userId,
+                req.body
+            );
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                message: 'Review submitted successfully',
+                data: { booking }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Get reviews for an employee
+     * GET /bookings/employee/:employeeId/reviews
+     */
+    async getEmployeeReviews(req, res, next) {
+        try {
+            const result = await bookingService.getEmployeeReviews(
+                req.params.employeeId,
+                req.query
+            );
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                data: result
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new BookingController();
