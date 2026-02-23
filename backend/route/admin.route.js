@@ -98,6 +98,18 @@ router.post(
 );
 
 /**
+ * @route   PUT /api/v1/admin/users/:userId
+ * @desc    Update user by admin
+ * @access  Private (Admin only)
+ */
+router.put(
+    '/users/:userId',
+    permissionGuard(PERMISSIONS.MANAGE_USERS),
+    validateParams(userIdParamSchema),
+    adminController.updateUser
+);
+
+/**
  * @route   PATCH /api/v1/admin/users/:userId/block
  * @desc    Block a user
  * @access  Private (Admin only)

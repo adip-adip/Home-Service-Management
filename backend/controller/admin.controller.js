@@ -60,6 +60,28 @@ class AdminController {
     }
 
     /**
+     * Update user by admin
+     * PUT /admin/users/:userId
+     */
+    async updateUser(req, res, next) {
+        try {
+            const user = await userService.updateUserByAdmin(
+                req.params.userId,
+                req.body,
+                req.user.userId
+            );
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                message: SUCCESS_MESSAGES.USER_UPDATED || 'User updated successfully',
+                data: { user }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
      * Block user
      * PATCH /admin/users/:userId/block
      */
