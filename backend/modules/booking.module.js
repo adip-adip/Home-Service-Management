@@ -68,15 +68,20 @@ const bookingSchema = new mongoose.Schema({
     // Booking status
     status: {
         type: String,
-        enum: Object.values(BOOKING_STATUS),
+        enum: [...Object.values(BOOKING_STATUS), 'in_progress'], // Include old value for backward compatibility
         default: BOOKING_STATUS.PENDING
+    },
+
+    // Job started timestamp
+    startedAt: {
+        type: Date
     },
 
     // Status history for tracking changes
     statusHistory: [{
         status: {
             type: String,
-            enum: Object.values(BOOKING_STATUS)
+            enum: [...Object.values(BOOKING_STATUS), 'in_progress']
         },
         changedAt: {
             type: Date,
@@ -173,17 +178,6 @@ bookingSchema.virtual('address').get(function() {
 // Virtual for totalAmount alias
 bookingSchema.virtual('totalAmount').get(function() {
     return this.finalPrice || this.estimatedPrice;
-});
-
-// Pre-save middleware to update status history
-bookingSchema.pre('save', function(next) {
-    if (this.isModified('status') && this.statusHistory) {
-        this.statusHistory.push({
-            status: this.status,
-            changedAt: new Date()
-        });
-    }
-    next();
 });
 
 // Static method to find bookings by customer

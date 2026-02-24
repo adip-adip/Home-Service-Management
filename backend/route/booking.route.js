@@ -125,4 +125,25 @@ router.patch(
     bookingController.completeBooking
 );
 
+/**
+ * @route   PATCH /api/v1/bookings/:bookingId/review
+ * @desc    Submit a review for a completed booking (Customer only)
+ * @access  Private (Customer only)
+ */
+router.patch(
+    '/:bookingId/review',
+    permissionGuard(PERMISSIONS.CREATE_BOOKING),
+    bookingController.submitReview
+);
+
+/**
+ * @route   GET /api/v1/bookings/employee/:employeeId/reviews
+ * @desc    Get reviews for an employee
+ * @access  Public
+ */
+router.get(
+    '/employee/:employeeId/reviews',
+    bookingController.getEmployeeReviews
+);
+
 module.exports = router;
