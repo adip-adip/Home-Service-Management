@@ -63,6 +63,18 @@ export const bookingAPI = {
     completeBooking: async (bookingId, completionData) => {
         const response = await api.patch(`/bookings/${bookingId}/complete`, completionData);
         return response.data;
+    },
+
+    // Submit review (customer)
+    submitReview: async (bookingId, reviewData) => {
+        const response = await api.patch(`/bookings/${bookingId}/review`, reviewData);
+        return response.data;
+    },
+
+    // Get employee reviews
+    getEmployeeReviews: async (employeeId, params = {}) => {
+        const response = await api.get(`/bookings/employee/${employeeId}/reviews`, { params });
+        return response.data;
     }
 };
 

@@ -87,6 +87,12 @@ export const adminAPI = {
     verifyDocument: async (userId, documentId, action, reason) => {
         const response = await api.patch(`/admin/employees/${userId}/documents/${documentId}/verify`, { action, reason });
         return response.data;
+    },
+
+    // Get all bookings (admin only)
+    getAllBookings: async (params = {}) => {
+        const response = await api.get('/admin/bookings', { params });
+        return response.data;
     }
 };
 
