@@ -21,7 +21,6 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuthStore();
     const [stats, setStats] = useState(null);
-    const [securitySummary, setSecuritySummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const hasFetched = useRef(false);
@@ -40,16 +39,7 @@ const AdminDashboard = () => {
         try {
             setLoading(true);
             const statsResponse = await adminAPI.getDashboardStats();
-            
             setStats(statsResponse.data.stats);
-            
-            // Set mock security summary for now (this should come from API)
-            setSecuritySummary({
-                successfulLogins: 1256,
-                failedLogins: 23,
-                securityEvents: 5,
-                suspiciousActivities: 0
-            });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             setError('Failed to load dashboard data');
@@ -157,60 +147,6 @@ const AdminDashboard = () => {
                             <div>
                                 <h3 className="text-2xl font-bold text-gray-800">{stats.blockedUsers}</h3>
                                 <p className="text-sm text-gray-500">Blocked Users</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Security Summary */}
-            {securitySummary && (
-                <div className="mb-8">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Security Summary (Last 7 days)</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-800">{securitySummary.successfulLogins}</p>
-                                    <p className="text-sm text-gray-500">Successful Logins</p>
-                                </div>
-                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded">Normal</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-800">{securitySummary.failedLogins}</p>
-                                    <p className="text-sm text-gray-500">Failed Logins</p>
-                                </div>
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${securitySummary.failedLogins > 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                    {securitySummary.failedLogins > 50 ? 'Monitor' : 'Normal'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-800">{securitySummary.securityEvents}</p>
-                                    <p className="text-sm text-gray-500">Security Events</p>
-                                </div>
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${securitySummary.securityEvents > 10 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {securitySummary.securityEvents > 10 ? 'Alert' : 'Normal'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-800">{securitySummary.suspiciousActivities}</p>
-                                    <p className="text-sm text-gray-500">Suspicious Activities</p>
-                                </div>
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${securitySummary.suspiciousActivities > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {securitySummary.suspiciousActivities > 0 ? 'Critical' : 'Normal'}
-                                </span>
                             </div>
                         </div>
                     </div>
