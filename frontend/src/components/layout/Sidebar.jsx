@@ -32,7 +32,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 ...common,
                 { path: '/dashboard/users', icon: FiUsers, label: 'Users' },
                 { path: '/dashboard/employees', icon: FiUserCheck, label: 'Employees' },
-                { path: '/dashboard/bookings', icon: FiCalendar, label: 'All Bookings' },
+                { path: '/dashboard/all-bookings', icon: FiCalendar, label: 'All Bookings' },
                 { path: '/dashboard/document-verification', icon: FiFileText, label: 'Documents' },
             ];
         }
@@ -53,7 +53,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         return [
             ...common,
             { path: '/dashboard/bookings', icon: FiCalendar, label: 'My Bookings' },
-            { path: '/dashboard/favorites', icon: FiStar, label: 'Favorites' },
+            // { path: '/dashboard/favorites', icon: FiStar, label: 'Favorites' },
         ];
     };
 

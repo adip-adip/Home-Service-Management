@@ -92,7 +92,14 @@ const EmployeeJobs = () => {
         }
     };
 
+    // Helper to normalize status (handle both in-progress and in_progress)
+    const normalizeStatus = (status) => {
+        if (status === 'in_progress') return 'in-progress';
+        return status;
+    };
+
     const getStatusColor = (status) => {
+        const normalized = normalizeStatus(status);
         const colors = {
             pending: 'bg-yellow-100 text-yellow-800',
             confirmed: 'bg-blue-100 text-blue-800',
@@ -101,7 +108,7 @@ const EmployeeJobs = () => {
             cancelled: 'bg-gray-100 text-gray-800',
             rejected: 'bg-red-100 text-red-800'
         };
-        return colors[status] || 'bg-gray-100 text-gray-800';
+        return colors[normalized] || 'bg-gray-100 text-gray-800';
     };
 
     const formatDate = (dateString) => {
@@ -232,7 +239,7 @@ const EmployeeJobs = () => {
                                     View Details
                                 </Link>
                                 
-                                {job.status === 'pending' && (
+                                {normalizeStatus(job.status) === 'pending' && (
                                     <>
                                         <button 
                                             className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
@@ -249,7 +256,7 @@ const EmployeeJobs = () => {
                                     </>
                                 )}
 
-                                {job.status === 'confirmed' && (
+                                {normalizeStatus(job.status) === 'confirmed' && (
                                     <button 
                                         className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
                                         onClick={() => handleStart(job._id)}
@@ -258,7 +265,7 @@ const EmployeeJobs = () => {
                                     </button>
                                 )}
 
-                                {job.status === 'in-progress' && (
+                                {normalizeStatus(job.status) === 'in-progress' && (
                                     <button 
                                         className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
                                         onClick={() => handleComplete(job._id)}

@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { 
     FiCalendar, FiClock, FiUser, FiMapPin, 
     FiCheckCircle, FiXCircle, FiPlus, FiRefreshCw,
-    FiFilter
+    FiFilter, FiStar
 } from 'react-icons/fi';
 import { bookingAPI } from '../../api';
 import { useAuthStore } from '../../store';
@@ -60,7 +60,14 @@ const CustomerBookings = () => {
         }
     };
 
+    // Helper to normalize status (handle both in-progress and in_progress)
+    const normalizeStatus = (status) => {
+        if (status === 'in_progress') return 'in-progress';
+        return status;
+    };
+
     const getStatusColor = (status) => {
+        const normalized = normalizeStatus(status);
         const colors = {
             pending: 'bg-yellow-100 text-yellow-800',
             confirmed: 'bg-blue-100 text-blue-800',
@@ -69,7 +76,7 @@ const CustomerBookings = () => {
             cancelled: 'bg-gray-100 text-gray-800',
             rejected: 'bg-red-100 text-red-800'
         };
-        return colors[status] || 'bg-gray-100 text-gray-800';
+        return colors[normalized] || 'bg-gray-100 text-gray-800';
     };
 
     const formatDate = (dateString) => {
@@ -114,7 +121,7 @@ const CustomerBookings = () => {
 
             {/* Filter Tabs */}
             <div className="flex flex-wrap gap-2 mb-6 p-1 bg-gray-100 rounded-lg w-fit">
-                {['all', 'pending', 'confirmed', 'in-progress', 'completed'].map((tab) => (
+                {['all', 'pending', 'confirmed', 'in-progress', 'completed', 'cancelled'].map((tab) => (
                     <button 
                         key={tab}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -195,13 +202,28 @@ const CustomerBookings = () => {
                                 >
                                     View Details
                                 </Link>
-                                {['pending', 'confirmed'].includes(booking.status) && (
+                                {['pending', 'confirmed'].includes(normalizeStatus(booking.status)) && (
                                     <button 
                                         className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
                                         onClick={() => handleCancelBooking(booking._id)}
                                     >
                                         <FiXCircle /> Cancel
                                     </button>
+                                )}
+                                {/* Review button for completed bookings */}
+                                {normalizeStatus(booking.status) === 'completed' && !booking.review && (
+                                    <Link
+                                        to={`/dashboard/booking/${booking._id}/review`}
+                                        className="px-3 py-2 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1"
+                                    >
+                                        <FiStar /> Review
+                                    </Link>
+                                )}
+                                {/* Show reviewed badge */}
+                                {normalizeStatus(booking.status) === 'completed' && booking.review && (
+                                    <span className="px-3 py-2 text-sm bg-green-100 text-green-700 rounded-lg flex items-center gap-1">
+                                        <FiCheckCircle /> Reviewed
+                                    </span>
                                 )}
                             </div>
                         </div>

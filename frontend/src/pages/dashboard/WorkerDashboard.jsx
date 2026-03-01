@@ -101,7 +101,7 @@ const WorkerDashboard = () => {
             title: 'View All Jobs',
             description: 'See all your assigned jobs',
             icon: <FiBriefcase className="w-6 h-6" />,
-            action: () => navigate('/dashboard/employee-jobs'),
+            action: () => navigate('/dashboard/jobs'),
             color: 'bg-blue-500 hover:bg-blue-600'
         },
         {
@@ -222,7 +222,7 @@ const WorkerDashboard = () => {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-900">Recent Jobs</h2>
                         <Button 
-                            onClick={() => navigate('/dashboard/employee-jobs')}
+                            onClick={() => navigate('/dashboard/jobs')}
                             variant="outline"
                             size="sm"
                         >

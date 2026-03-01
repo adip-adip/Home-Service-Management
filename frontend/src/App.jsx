@@ -16,6 +16,8 @@ import { AuthLayout, DashboardLayout } from './components/layout';
 // Pages
 import { 
     Home, 
+    Services,
+    About,
     Unauthorized, 
     NotFound,
     TestComponent,
@@ -28,14 +30,19 @@ import {
     Profile,
     Users,
     CustomerBookings,
+    CustomerReview,
     EmployeeJobs,
     CreateBooking,
     BookingDetails,
     DocumentVerification,
     AdminDashboard,
+    AdminBookings,
     WorkerDashboard,
     WorkerDocuments,
     WorkerProfile,
+    EmployeeSchedule,
+    EmployeeEarnings,
+    EmployeeReviews,
     DebugDashboard
 } from './pages';
 
@@ -84,6 +91,8 @@ function App() {
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/test" element={<TestComponent />} />
                 <Route path="/debug" element={<ApiDebug />} />
                 <Route path="/auth-debug" element={<AuthDebugger />} />
@@ -116,6 +125,7 @@ function App() {
                     <Route element={<DashboardLayout />}>
                         <Route path="/dashboard/bookings" element={<CustomerBookings />} />
                         <Route path="/dashboard/book-service" element={<CreateBooking />} />
+                        <Route path="/dashboard/booking/:bookingId/review" element={<CustomerReview />} />
                     </Route>
                 </Route>
 
@@ -124,6 +134,9 @@ function App() {
                     <Route element={<DashboardLayout />}>
                         <Route path="/dashboard/worker" element={<WorkerDashboard />} />
                         <Route path="/dashboard/jobs" element={<EmployeeJobs />} />
+                        <Route path="/dashboard/schedule" element={<EmployeeSchedule />} />
+                        <Route path="/dashboard/earnings" element={<EmployeeEarnings />} />
+                        <Route path="/dashboard/reviews" element={<EmployeeReviews />} />
                         <Route path="/dashboard/worker-documents" element={<WorkerDocuments />} />
                         <Route path="/dashboard/worker-profile" element={<WorkerProfile />} />
                     </Route>
@@ -135,7 +148,7 @@ function App() {
                         <Route path="/dashboard/admin" element={<AdminDashboard />} />
                         <Route path="/dashboard/users" element={<Users />} />
                         <Route path="/dashboard/employees" element={<Users />} />
-                        <Route path="/dashboard/bookings" element={<CustomerBookings />} />
+                        <Route path="/dashboard/all-bookings" element={<AdminBookings />} />
                         <Route path="/dashboard/document-verification" element={<DocumentVerification />} />
                     </Route>
                 </Route>

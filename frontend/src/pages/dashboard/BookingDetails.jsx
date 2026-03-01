@@ -3,12 +3,12 @@
  * Shows full details of a booking with actions
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
     FiArrowLeft, FiCalendar, FiClock, FiUser, FiMapPin, 
     FiPhone, FiMail, FiCheckCircle, FiXCircle, FiPlay,
-    FiFileText, FiDollarSign, FiAlertCircle
+    FiFileText, FiDollarSign, FiAlertCircle, FiStar, FiAlertTriangle
 } from 'react-icons/fi';
 import { bookingAPI } from '../../api';
 import { useAuthStore } from '../../store';
@@ -21,6 +21,7 @@ const BookingDetails = () => {
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
     const hasFetched = useRef(false);
+    const reviewSectionRef = useRef(null);
 
     const fetchBooking = useCallback(async () => {
         try {
@@ -42,6 +43,14 @@ const BookingDetails = () => {
             fetchBooking();
         }
     }, [isAuthenticated, bookingId, fetchBooking]);
+
+    useEffect(() => {
+        if (!booking || window.location.hash !== '#review' || !reviewSectionRef.current) {
+            return;
+        }
+
+        reviewSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [booking]);
 
     const handleAccept = async () => {
         try {
@@ -97,7 +106,14 @@ const BookingDetails = () => {
         }
     };
 
+    // Helper to normalize status (handle both in-progress and in_progress)
+    const normalizeStatus = (status) => {
+        if (status === 'in_progress') return 'in-progress';
+        return status;
+    };
+
     const getStatusColor = (status) => {
+        const normalized = normalizeStatus(status);
         const colors = {
             pending: 'bg-yellow-500',
             confirmed: 'bg-blue-500',
@@ -106,7 +122,7 @@ const BookingDetails = () => {
             cancelled: 'bg-gray-500',
             rejected: 'bg-red-500'
         };
-        return colors[status] || 'bg-gray-500';
+        return colors[normalized] || 'bg-gray-500';
     };
 
     const formatDate = (dateString) => {
@@ -120,6 +136,28 @@ const BookingDetails = () => {
 
     const isEmployee = user?.role === 'employee';
     const isCustomer = user?.role === 'customer';
+
+    const deduplicatedStatusHistory = useMemo(() => {
+        if (!booking?.statusHistory?.length) {
+            return [];
+        }
+
+        const seen = new Set();
+        return booking.statusHistory.filter((history) => {
+            const key = [
+                normalizeStatus(history?.status || ''),
+                history?.changedAt ? new Date(history.changedAt).toISOString() : '',
+                (history?.notes || '').trim()
+            ].join('|');
+
+            if (seen.has(key)) {
+                return false;
+            }
+
+            seen.add(key);
+            return true;
+        });
+    }, [booking]);
 
     if (loading) {
         return (
@@ -276,15 +314,15 @@ const BookingDetails = () => {
                 </div>
 
                 {/* Status History */}
-                {booking.statusHistory && booking.statusHistory.length > 0 && (
+                {deduplicatedStatusHistory.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Status History</h3>
                         <div className="space-y-4">
-                            {booking.statusHistory.map((history, index) => (
+                            {deduplicatedStatusHistory.map((history, index) => (
                                 <div key={index} className="flex items-start gap-4">
                                     <div className={`w-3 h-3 rounded-full mt-1.5 ${getStatusColor(history.status)}`}></div>
                                     <div>
-                                        <p className="font-medium text-gray-800 capitalize">{history.status}</p>
+                                        <p className="font-medium text-gray-800 capitalize">{normalizeStatus(history.status).replace('-', ' ')}</p>
                                         <p className="text-sm text-gray-500">
                                             {new Date(history.changedAt).toLocaleString()}
                                         </p>
@@ -298,10 +336,45 @@ const BookingDetails = () => {
                     </div>
                 )}
 
+                {/* Customer Review */}
+                {normalizeStatus(booking.status) === 'completed' && (
+                    <div ref={reviewSectionRef} id="review" className="bg-white rounded-xl shadow-sm p-6">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Review</h3>
+
+                        {booking.review ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-yellow-500">
+                                    {Array.from({ length: 5 }).map((_, index) => (
+                                        <FiStar
+                                            key={index}
+                                            className={index < booking.review.rating ? 'fill-current' : ''}
+                                        />
+                                    ))}
+                                    <span className="text-sm text-gray-600 ml-1">{booking.review.rating}/5</span>
+                                </div>
+                                {booking.review.rating < 2 && (
+                                    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 border border-red-200 text-sm font-medium">
+                                        <FiAlertTriangle className="text-red-600" />
+                                        Warning: Very low customer satisfaction. Please prioritize follow-up.
+                                    </div>
+                                )}
+                                <p className="text-gray-700 whitespace-pre-wrap">{booking.review.text}</p>
+                                {booking.review.createdAt && (
+                                    <p className="text-xs text-gray-500">
+                                        Submitted on {new Date(booking.review.createdAt).toLocaleString()}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500">No customer review has been submitted yet.</p>
+                        )}
+                    </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex flex-wrap gap-3">
                     {/* Customer Actions */}
-                    {isCustomer && ['pending', 'confirmed'].includes(booking.status) && (
+                    {isCustomer && ['pending', 'confirmed'].includes(normalizeStatus(booking.status)) && (
                         <button 
                             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
                             onClick={handleCancel}
@@ -310,8 +383,25 @@ const BookingDetails = () => {
                         </button>
                     )}
 
+                    {/* Customer Review Action */}
+                    {isCustomer && normalizeStatus(booking.status) === 'completed' && !booking.review && (
+                        <Link 
+                            to={`/dashboard/booking/${booking._id}/review`}
+                            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
+                        >
+                            <FiStar /> Write Review
+                        </Link>
+                    )}
+
+                    {/* Show reviewed status */}
+                    {isCustomer && normalizeStatus(booking.status) === 'completed' && booking.review && (
+                        <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg flex items-center gap-2">
+                            <FiCheckCircle /> Review Submitted
+                        </div>
+                    )}
+
                     {/* Employee Actions */}
-                    {isEmployee && booking.status === 'pending' && (
+                    {isEmployee && normalizeStatus(booking.status) === 'pending' && (
                         <>
                             <button 
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
@@ -328,7 +418,7 @@ const BookingDetails = () => {
                         </>
                     )}
 
-                    {isEmployee && booking.status === 'confirmed' && (
+                    {isEmployee && normalizeStatus(booking.status) === 'confirmed' && (
                         <button 
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                             onClick={handleStart}
@@ -337,7 +427,7 @@ const BookingDetails = () => {
                         </button>
                     )}
 
-                    {isEmployee && booking.status === 'in-progress' && (
+                    {isEmployee && normalizeStatus(booking.status) === 'in-progress' && (
                         <button 
                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
                             onClick={handleComplete}
