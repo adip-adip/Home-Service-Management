@@ -227,6 +227,24 @@ const SERVICE_CATEGORIES = Object.freeze({
     OTHER: 'other'
 });
 
+// Notification Types
+const NOTIFICATION_TYPES = Object.freeze({
+    BOOKING: 'booking',
+    DOCUMENT: 'document',
+    REVIEW: 'review',
+    EMPLOYEE: 'employee',
+    SYSTEM: 'system'
+});
+
+// Socket Events
+const SOCKET_EVENTS = Object.freeze({
+    NOTIFICATION_NEW: 'notification:new',
+    NOTIFICATION_READ: 'notification:read',
+    NOTIFICATION_ALL_READ: 'notification:allRead',
+    NOTIFICATION_DELETED: 'notification:deleted',
+    NOTIFICATION_ALL_DELETED: 'notification:allDeleted'
+});
+
 module.exports = {
     ROLES,
     PERMISSIONS,
@@ -241,5 +259,7 @@ module.exports = {
     HTTP_STATUS,
     ERROR_MESSAGES,
     SUCCESS_MESSAGES,
-    SERVICE_CATEGORIES
+    SERVICE_CATEGORIES,
+    NOTIFICATION_TYPES,
+    SOCKET_EVENTS
 };
