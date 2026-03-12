@@ -9,6 +9,7 @@ const adminRoutes = require('../route/admin.route');
 const employeeRoutes = require('../route/employee.route');
 const serviceRoutes = require('../route/service.route');
 const bookingRoutes = require('../route/booking.route');
+const notificationRoutes = require('../route/notification.route');
 
 /**
  * Configure all routes for the application
@@ -35,6 +36,7 @@ const configureRoutes = (app) => {
     app.use(`${API_PREFIX}/employee`, employeeRoutes);
     app.use(`${API_PREFIX}/services`, serviceRoutes);
     app.use(`${API_PREFIX}/bookings`, bookingRoutes);
+    app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 
     // 404 Handler for undefined routes
     app.use('*', (req, res) => {

@@ -5,8 +5,10 @@
 
 require('dotenv').config();
 
+const http = require('http');
 const { createApp } = require('./app');
 const { connectDB } = require('./config/db.config');
+const { initializeSocket } = require('./config/socket.config');
 const { runSeeder } = require('./seeder/user.seeder');
 const mailService = require('./service/mail.service');
 
@@ -82,8 +84,14 @@ async function startServer() {
         // Create Express app
         const app = createApp();
 
+        // Create HTTP server
+        const server = http.createServer(app);
+
+        // Initialize Socket.IO
+        initializeSocket(server);
+
         // Start HTTP server
-        const server = app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log('\n========================================');
             console.log(`🌟 Server running in ${NODE_ENV} mode`);
             console.log(`🔗 URL: http://localhost:${PORT}`);
