@@ -38,6 +38,17 @@ router.get(
     permissionGuard(PERMISSIONS.ACCESS_ADMIN_DASHBOARD),
     adminController.getDashboardStats
 );
+
+/**
+ * @route   GET /api/v1/admin/dashboard/analytics
+ * @desc    Get analytics data for charts
+ * @access  Private (Admin only)
+ */
+router.get(
+    '/dashboard/analytics',
+    permissionGuard(PERMISSIONS.ACCESS_ADMIN_DASHBOARD),
+    adminController.getAnalytics
+);
 /**
  * @route   GET /api/v1/admin/employees/:userId/documents
  * @desc    Get employee documents for verification

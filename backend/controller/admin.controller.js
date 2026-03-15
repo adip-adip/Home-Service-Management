@@ -290,6 +290,146 @@ class AdminController {
             next(error);
         }
     }
+
+    /**
+     * Get analytics data for charts
+     * GET /admin/dashboard/analytics
+     */
+    async getAnalytics(req, res, next) {
+        try {
+            const { User, Booking } = require('../modules');
+            const { ROLES, BOOKING_STATUS, EMPLOYEE_STATUS } = require('../config/constant.config');
+
+            // Get date range for last 6 months
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            sixMonthsAgo.setDate(1);
+            sixMonthsAgo.setHours(0, 0, 0, 0);
+
+            // User registrations by month (last 6 months)
+            const userRegistrations = await User.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: sixMonthsAgo }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createdAt' },
+                            month: { $month: '$createdAt' }
+                        },
+                        count: { $sum: 1 }
+                    }
+                },
+                {
+                    $sort: { '_id.year': 1, '_id.month': 1 }
+                }
+            ]);
+
+            // Bookings by month (last 6 months)
+            const bookingsByMonth = await Booking.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: sixMonthsAgo }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createdAt' },
+                            month: { $month: '$createdAt' }
+                        },
+                        count: { $sum: 1 },
+                        revenue: { $sum: { $ifNull: ['$finalPrice', '$estimatedPrice'] } }
+                    }
+                },
+                {
+                    $sort: { '_id.year': 1, '_id.month': 1 }
+                }
+            ]);
+
+            // Booking status distribution
+            const bookingStatusCounts = await Booking.aggregate([
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            // User role distribution
+            const userRoleCounts = await User.aggregate([
+                {
+                    $group: {
+                        _id: '$role',
+                        count: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            // Service category distribution (from bookings)
+            const serviceCategoryCounts = await Booking.aggregate([
+                {
+                    $group: {
+                        _id: '$serviceCategory',
+                        count: { $sum: 1 }
+                    }
+                },
+                {
+                    $sort: { count: -1 }
+                },
+                {
+                    $limit: 5
+                }
+            ]);
+
+            // Format month names
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            const formatMonthlyData = (data) => {
+                return data.map(item => ({
+                    month: monthNames[item._id.month - 1],
+                    year: item._id.year,
+                    count: item.count,
+                    revenue: item.revenue || 0
+                }));
+            };
+
+            // Format status labels
+            const formatStatusData = (data) => {
+                return data.map(item => ({
+                    name: item._id ? item._id.charAt(0).toUpperCase() + item._id.slice(1).replace('_', ' ') : 'Unknown',
+                    value: item.count
+                }));
+            };
+
+            // Format role labels
+            const formatRoleData = (data) => {
+                return data.map(item => ({
+                    name: item._id ? item._id.charAt(0).toUpperCase() + item._id.slice(1) : 'Unknown',
+                    value: item.count
+                }));
+            };
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                data: {
+                    userRegistrations: formatMonthlyData(userRegistrations),
+                    bookingsByMonth: formatMonthlyData(bookingsByMonth),
+                    bookingStatusDistribution: formatStatusData(bookingStatusCounts),
+                    userRoleDistribution: formatRoleData(userRoleCounts),
+                    topServiceCategories: serviceCategoryCounts.map(item => ({
+                        name: item._id || 'Other',
+                        value: item.count
+                    }))
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new AdminController();
