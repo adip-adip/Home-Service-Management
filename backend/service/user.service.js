@@ -6,6 +6,7 @@
 const { User } = require('../modules');
 const { ROLES, USER_STATUS, EMPLOYEE_STATUS, ERROR_MESSAGES, ROLE_PERMISSIONS } = require('../config/constant.config');
 const mailService = require('./mail.service');
+const notificationService = require('./notification.service');
 
 class UserService {
     /**
@@ -676,8 +677,15 @@ class UserService {
             }
 
             // Get updated user to return correct document count
-            const updatedUser = await User.findById(userId).select('employeeProfile.documents');
+            const updatedUser = await User.findById(userId).select('firstName lastName employeeProfile.documents');
             console.log('Total documents for user:', updatedUser.employeeProfile.documents.length);
+
+            // Notify admins about new document upload
+            try {
+                await notificationService.notifyDocumentUpload(updatedUser, uploadedDocuments.length);
+            } catch (err) {
+                console.error('Failed to send document upload notification:', err);
+            }
 
             return {
                 message: 'Documents uploaded successfully',
@@ -838,6 +846,25 @@ class UserService {
             user.employeeProfile.status = EMPLOYEE_STATUS.APPROVED;
             user.status = USER_STATUS.ACTIVE;
             await user.save();
+
+            // Notify employee about approval
+            try {
+                await notificationService.notifyEmployeeStatus(user, 'approved');
+            } catch (err) {
+                console.error('Failed to send employee approval notification:', err);
+            }
+        }
+
+        // Notify employee about document verification
+        try {
+            await notificationService.notifyDocumentVerification(
+                user,
+                document.documentType || 'document',
+                verified ? 'verified' : 'rejected',
+                reason
+            );
+        } catch (err) {
+            console.error('Failed to send document verification notification:', err);
         }
 
         return {

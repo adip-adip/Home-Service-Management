@@ -6,6 +6,7 @@
 const mongoose = require('mongoose');
 const { Booking, User } = require('../modules');
 const { BOOKING_STATUS, ERROR_MESSAGES, ROLES, EMPLOYEE_STATUS } = require('../config/constant.config');
+const notificationService = require('./notification.service');
 
 class BookingService {
     /**
@@ -88,6 +89,13 @@ class BookingService {
         const populatedBooking = await Booking.findById(booking._id)
             .populate('customer', 'firstName lastName email phone address')
             .populate('employee', 'firstName lastName email phone avatar employeeProfile');
+
+        // Send notifications
+        try {
+            await notificationService.notifyNewBooking(populatedBooking);
+        } catch (err) {
+            console.error('Failed to send booking notifications:', err);
+        }
 
         return populatedBooking;
     }
@@ -227,7 +235,15 @@ class BookingService {
 
         await booking.confirm(employeeId);
 
-        return this.getBookingById(bookingId);
+        // Notify customer about confirmation
+        const confirmedBooking = await this.getBookingById(bookingId);
+        try {
+            await notificationService.notifyBookingStatusChange(confirmedBooking, 'confirmed');
+        } catch (err) {
+            console.error('Failed to send confirmation notification:', err);
+        }
+
+        return confirmedBooking;
     }
 
     /**
@@ -286,7 +302,15 @@ class BookingService {
 
         await booking.cancel(userId, reason);
 
-        return this.getBookingById(bookingId);
+        // Notify the other party about cancellation
+        const cancelledBooking = await this.getBookingById(bookingId);
+        try {
+            await notificationService.notifyBookingStatusChange(cancelledBooking, 'cancelled');
+        } catch (err) {
+            console.error('Failed to send cancellation notification:', err);
+        }
+
+        return cancelledBooking;
     }
 
     /**
@@ -319,7 +343,15 @@ class BookingService {
         });
         await booking.save();
 
-        return this.getBookingById(bookingId);
+        // Notify customer that job has started
+        const startedBooking = await this.getBookingById(bookingId);
+        try {
+            await notificationService.notifyBookingStatusChange(startedBooking, 'in-progress');
+        } catch (err) {
+            console.error('Failed to send start notification:', err);
+        }
+
+        return startedBooking;
     }
 
     /**
@@ -368,7 +400,15 @@ class BookingService {
             $inc: { 'employeeProfile.completedJobs': 1 }
         });
 
-        return this.getBookingById(bookingId);
+        // Notify customer that booking is completed
+        const completedBooking = await this.getBookingById(bookingId);
+        try {
+            await notificationService.notifyBookingStatusChange(completedBooking, 'completed');
+        } catch (err) {
+            console.error('Failed to send completion notification:', err);
+        }
+
+        return completedBooking;
     }
 
     /**
@@ -489,6 +529,13 @@ class BookingService {
         // Update booking with review reference
         booking.review = review._id;
         await booking.save();
+
+        // Notify employee about new review
+        try {
+            await notificationService.notifyNewReview(review, booking.employee);
+        } catch (err) {
+            console.error('Failed to send review notification:', err);
+        }
 
         // Return booking with populated review
         return await Booking.findById(bookingId)
