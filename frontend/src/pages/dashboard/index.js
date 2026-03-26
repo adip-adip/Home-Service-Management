@@ -20,3 +20,4 @@ export { default as EmployeeSchedule } from './EmployeeSchedule';
 export { default as EmployeeEarnings } from './EmployeeEarnings';
 export { default as EmployeeReviews } from './EmployeeReviews';
 export { default as DebugDashboard } from './DebugDashboard';
+export { default as Notifications } from './Notifications';

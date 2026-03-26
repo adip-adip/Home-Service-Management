@@ -1,32 +1,51 @@
 /**
- * Admin Dashboard Component
+ * Admin Dashboard Component with Analytics Charts
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    FiUsers, 
-    FiUserCheck, 
-    FiFileText, 
+import {
+    FiUsers,
+    FiUserCheck,
+    FiFileText,
     FiActivity,
     FiBarChart2,
     FiTrendingUp,
-    FiAlertTriangle
+    FiAlertTriangle,
+    FiCalendar,
+    FiDollarSign
 } from 'react-icons/fi';
+import {
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    PieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer
+} from 'recharts';
 import { adminAPI } from '../../api';
 import { Button } from '../../components/common';
 import { useAuthStore } from '../../store';
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuthStore();
     const [stats, setStats] = useState(null);
+    const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const hasFetched = useRef(false);
 
     useEffect(() => {
-        // Only fetch if authenticated and haven't fetched yet
         if (isAuthenticated && user && !hasFetched.current) {
             hasFetched.current = true;
             fetchDashboardData();
@@ -38,8 +57,12 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const statsResponse = await adminAPI.getDashboardStats();
+            const [statsResponse, analyticsResponse] = await Promise.all([
+                adminAPI.getDashboardStats(),
+                adminAPI.getAnalytics()
+            ]);
             setStats(statsResponse.data.stats);
+            setAnalytics(analyticsResponse.data);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             setError('Failed to load dashboard data');
@@ -51,30 +74,30 @@ const AdminDashboard = () => {
     const adminCards = [
         {
             title: 'User Management',
-            description: 'Manage users, block/unblock accounts, view user details',
+            description: 'Manage users, block/unblock accounts',
             icon: <FiUsers />,
             action: () => navigate('/dashboard/users'),
             color: 'bg-blue-500'
         },
         {
             title: 'Employee Verification',
-            description: 'Approve/reject employee applications and documents',
+            description: 'Approve/reject employee applications',
             icon: <FiUserCheck />,
             action: () => navigate('/dashboard/document-verification'),
             color: 'bg-green-500'
         },
         {
             title: 'Document Management',
-            description: 'Review and verify employee documents',
+            description: 'Review employee documents',
             icon: <FiFileText />,
             action: () => navigate('/dashboard/document-verification'),
             color: 'bg-purple-500'
         },
         {
-            title: 'System Analytics',
-            description: 'View platform usage and performance metrics',
-            icon: <FiBarChart2 />,
-            action: () => navigate('/dashboard/analytics'),
+            title: 'All Bookings',
+            description: 'View and manage all bookings',
+            icon: <FiCalendar />,
+            action: () => navigate('/dashboard/bookings'),
             color: 'bg-teal-500'
         }
     ];
@@ -91,11 +114,11 @@ const AdminDashboard = () => {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 bg-gray-50 min-h-screen">
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-                <p className="text-gray-600">Manage platform users, security, and system monitoring</p>
+                <p className="text-gray-600">Platform overview and analytics</p>
             </div>
 
             {error && (
@@ -105,7 +128,7 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* Quick Stats */}
+            {/* Quick Stats Cards */}
             {stats && (
                 <div className="mb-8">
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">Platform Overview</h2>
@@ -141,66 +164,265 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                                <FiAlertTriangle className="text-xl text-red-600" />
+                            <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <FiCalendar className="text-xl text-purple-600" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-800">{stats.blockedUsers}</h3>
-                                <p className="text-sm text-gray-500">Blocked Users</p>
+                                <h3 className="text-2xl font-bold text-gray-800">{stats.totalBookings}</h3>
+                                <p className="text-sm text-gray-500">Total Bookings</p>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Admin Actions */}
+            {/* Analytics Charts */}
+            {analytics && (
+                <div className="mb-8">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Analytics</h2>
+
+                    {/* Charts Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                        {/* User Registrations Line Chart */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h3 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <FiTrendingUp className="text-blue-500" />
+                                User Registrations (Last 6 Months)
+                            </h3>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={analytics.userRegistrations}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                    <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                                    <YAxis stroke="#6B7280" fontSize={12} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#fff',
+                                            border: '1px solid #E5E7EB',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="count"
+                                        stroke="#3B82F6"
+                                        strokeWidth={3}
+                                        dot={{ fill: '#3B82F6', strokeWidth: 2 }}
+                                        name="New Users"
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Bookings Bar Chart */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h3 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <FiBarChart2 className="text-green-500" />
+                                Bookings by Month
+                            </h3>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={analytics.bookingsByMonth}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                    <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                                    <YAxis stroke="#6B7280" fontSize={12} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#fff',
+                                            border: '1px solid #E5E7EB',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="#10B981"
+                                        radius={[4, 4, 0, 0]}
+                                        name="Bookings"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Booking Status Pie Chart */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h3 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <FiActivity className="text-purple-500" />
+                                Booking Status Distribution
+                            </h3>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <PieChart>
+                                    <Pie
+                                        data={analytics.bookingStatusDistribution}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={2}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        labelLine={false}
+                                    >
+                                        {analytics.bookingStatusDistribution.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#fff',
+                                            border: '1px solid #E5E7EB',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* User Role Distribution Pie Chart */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h3 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <FiUsers className="text-orange-500" />
+                                User Role Distribution
+                            </h3>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <PieChart>
+                                    <Pie
+                                        data={analytics.userRoleDistribution}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={2}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        labelLine={false}
+                                    >
+                                        {analytics.userRoleDistribution.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#fff',
+                                            border: '1px solid #E5E7EB',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Revenue Chart */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
+                            <h3 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <FiDollarSign className="text-emerald-500" />
+                                Revenue by Month (Rs.)
+                            </h3>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={analytics.bookingsByMonth}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                    <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                                    <YAxis stroke="#6B7280" fontSize={12} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#fff',
+                                            border: '1px solid #E5E7EB',
+                                            borderRadius: '8px'
+                                        }}
+                                        formatter={(value) => [`Rs. ${value.toLocaleString()}`, 'Revenue']}
+                                    />
+                                    <Bar
+                                        dataKey="revenue"
+                                        fill="#059669"
+                                        radius={[4, 4, 0, 0]}
+                                        name="Revenue"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Top Service Categories */}
+                        {analytics.topServiceCategories && analytics.topServiceCategories.length > 0 && (
+                            <div className="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
+                                <h3 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                    <FiBarChart2 className="text-indigo-500" />
+                                    Top Service Categories
+                                </h3>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={analytics.topServiceCategories} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                        <XAxis type="number" stroke="#6B7280" fontSize={12} />
+                                        <YAxis type="category" dataKey="name" stroke="#6B7280" fontSize={12} width={100} />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#fff',
+                                                border: '1px solid #E5E7EB',
+                                                borderRadius: '8px'
+                                            }}
+                                        />
+                                        <Bar
+                                            dataKey="value"
+                                            fill="#6366F1"
+                                            radius={[0, 4, 4, 0]}
+                                            name="Bookings"
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Quick Actions */}
             <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Administration</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {adminCards.map((card, index) => (
-                        <div key={index} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <div
+                            key={index}
+                            className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={card.action}
+                        >
                             <div className={`${card.color} p-4 text-white`}>
                                 <span className="text-2xl">{card.icon}</span>
                             </div>
                             <div className="p-4">
                                 <h3 className="font-semibold text-gray-800 mb-1">{card.title}</h3>
-                                <p className="text-sm text-gray-500 mb-4">{card.description}</p>
-                                <Button onClick={card.action} size="small">
-                                    Access
-                                </Button>
+                                <p className="text-sm text-gray-500">{card.description}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Quick Actions */}
-            <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
-                <div className="flex flex-wrap gap-3">
-                    <Button 
-                        onClick={() => navigate('/dashboard/document-verification')}
-                    >
-                        <FiUserCheck />
-                        Review Pending Employees
-                    </Button>
-                    
-                    <Button 
-                        onClick={() => navigate('/dashboard/users')}
-                        variant="outline"
-                    >
-                        <FiUsers />
-                        Manage Users
-                    </Button>
-                    
-                    <Button 
-                        onClick={() => window.location.reload()}
-                        variant="ghost"
-                    >
-                        <FiActivity />
-                        Refresh Data
-                    </Button>
-                </div>
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3">
+                <Button
+                    onClick={() => navigate('/dashboard/document-verification')}
+                >
+                    <FiUserCheck />
+                    Review Pending Employees
+                </Button>
+
+                <Button
+                    onClick={() => navigate('/dashboard/users')}
+                    variant="outline"
+                >
+                    <FiUsers />
+                    Manage Users
+                </Button>
+
+                <Button
+                    onClick={() => {
+                        hasFetched.current = false;
+                        fetchDashboardData();
+                    }}
+                    variant="ghost"
+                >
+                    <FiActivity />
+                    Refresh Data
+                </Button>
             </div>
         </div>
     );

@@ -11,6 +11,12 @@ export const adminAPI = {
         return response.data;
     },
 
+    // Get analytics data for charts
+    getAnalytics: async () => {
+        const response = await api.get('/admin/dashboard/analytics');
+        return response.data;
+    },
+
     // Get all users
     getUsers: async (params = {}) => {
         const response = await api.get('/admin/users', { params });

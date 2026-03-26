@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { FiMenu } from 'react-icons/fi';
 import Sidebar from './Sidebar';
+import { NotificationBell } from '../notifications';
 
 const DashboardLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,16 +14,22 @@ const DashboardLayout = () => {
     return (
         <div className="flex min-h-screen bg-gray-100">
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-            
+
             <div className="flex-1 flex flex-col lg:ml-64">
                 {/* Mobile Header */}
-                <header className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
-                    <button 
+                <header className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                    <button
                         className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
                         onClick={() => setSidebarOpen(true)}
                     >
                         <FiMenu className="w-6 h-6" />
                     </button>
+                    <NotificationBell />
+                </header>
+
+                {/* Desktop Header */}
+                <header className="hidden lg:flex sticky top-0 z-30 bg-white border-b border-gray-200 px-6 py-3 items-center justify-end">
+                    <NotificationBell />
                 </header>
 
                 <main className="flex-1 p-4 md:p-6 lg:p-8">

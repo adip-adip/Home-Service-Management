@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiHome, FiUser, FiLogOut, FiMenu, FiX, FiSettings, FiGrid, FiChevronDown } from 'react-icons/fi';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../store';
+import { NotificationBell } from '../notifications';
 
 const Navbar = () => {
     const { isAuthenticated, user, logout } = useAuthStore();
@@ -59,7 +60,11 @@ const Navbar = () => {
 
                         <div className="flex items-center gap-4">
                             {isAuthenticated ? (
-                                <div className="relative" ref={dropdownRef}>
+                                <>
+                                    {/* Notification Bell */}
+                                    <NotificationBell />
+
+                                    <div className="relative" ref={dropdownRef}>
                                     <button 
                                         className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                                         onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -104,6 +109,7 @@ const Navbar = () => {
                                         </div>
                                     )}
                                 </div>
+                                </>
                             ) : (
                                 <div className="flex items-center gap-3">
                                     <Link to="/login">
