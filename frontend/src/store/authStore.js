@@ -58,8 +58,9 @@ const useAuthStore = create(
                     return { success: true, message: response.message };
                 } catch (error) {
                     const message = error.response?.data?.message || 'Registration failed';
+                    const errors = error.response?.data?.errors || [];
                     set({ error: message, isLoading: false });
-                    return { success: false, error: message };
+                    return { success: false, error: message, errors };
                 }
             },
 

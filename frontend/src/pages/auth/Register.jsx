@@ -19,10 +19,25 @@ const Register = () => {
         phone: '',
         password: '',
         confirmPassword: '',
-        role: 'customer'
+        role: 'customer',
+        serviceCategories: [],
+        experience: 0
     });
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
+
+    const serviceOptions = [
+        { value: 'plumbing', label: 'Plumbing' },
+        { value: 'electrical', label: 'Electrical' },
+        { value: 'cleaning', label: 'Cleaning' },
+        { value: 'painting', label: 'Painting' },
+        { value: 'carpentry', label: 'Carpentry' },
+        { value: 'appliance_repair', label: 'Appliance Repair' },
+        { value: 'pest_control', label: 'Pest Control' },
+        { value: 'gardening', label: 'Gardening' },
+        { value: 'ac_repair', label: 'AC Repair' },
+        { value: 'other', label: 'Other' }
+    ];
 
     const validate = () => {
         const newErrors = {};
@@ -60,6 +75,13 @@ const Register = () => {
         if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = 'Passwords do not match';
         }
+
+        // Employee/Provider specific validation
+        if (formData.role === 'employee') {
+            if (!formData.serviceCategories || formData.serviceCategories.length === 0) {
+                newErrors.serviceCategories = 'Please select at least one service category';
+            }
+        }
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -67,9 +89,20 @@ const Register = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
+        
+        if (name === 'role') {
+            // Reset employee-specific fields when changing role
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                serviceCategories: [],
+                experience: 0
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+            if (errors[name]) {
+                setErrors(prev => ({ ...prev, [name]: '' }));
+            }
         }
     };
 
@@ -84,7 +117,17 @@ const Register = () => {
             toast.success('Registration successful! Please check your email to verify your account.');
             navigate('/login');
         } else {
-            toast.error(result.error);
+            // Handle backend validation errors
+            if (result.errors && result.errors.length > 0) {
+                const backendErrors = {};
+                result.errors.forEach(err => {
+                    backendErrors[err.field] = err.message;
+                });
+                setErrors(backendErrors);
+                toast.error('Please fix the errors below');
+            } else {
+                toast.error(result.error);
+            }
         }
     };
 
@@ -203,6 +246,53 @@ const Register = () => {
                                 </label>
                             </div>
                         </div>
+
+        {/* Employee/Provider Specific Fields */}
+                        {formData.role === 'employee' && (
+                            <>
+                                {/* Service Categories */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Service Category *</label>
+                                    <select
+                                        name="serviceCategories"
+                                        value={formData.serviceCategories[0] || ''}
+                                        onChange={(e) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                serviceCategories: e.target.value ? [e.target.value] : []
+                                            }));
+                                            if (errors.serviceCategories) {
+                                                setErrors(prev => ({ ...prev, serviceCategories: '' }));
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-3 rounded-lg border ${errors.serviceCategories ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent transition-all`}
+                                    >
+                                        <option value="">Select a service category</option>
+                                        {serviceOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.serviceCategories && <p className="text-red-500 text-sm mt-1">{errors.serviceCategories}</p>}
+                                </div>
+
+                                {/* Experience */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+                                    <input
+                                        type="number"
+                                        name="experience"
+                                        min="0"
+                                        max="50"
+                                        value={formData.experience}
+                                        onChange={handleChange}
+                                        placeholder="0"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         {/* Password Field */}
                         <div>

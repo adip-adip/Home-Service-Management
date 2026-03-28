@@ -3,26 +3,29 @@
  */
 
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Store
 import { useAuthStore } from './store';
+
+// Hooks
+import { useSocket } from './hooks/useSocket';
 
 // Components
 import { ProtectedRoute, GuestRoute } from './components/auth';
 import { AuthLayout, DashboardLayout } from './components/layout';
 
 // Pages
-import { 
-    Home, 
+import {
+    Home,
     Services,
     About,
-    Unauthorized, 
+    Unauthorized,
     NotFound,
     TestComponent,
-    Login, 
-    Register, 
+    Login,
+    Register,
     ForgotPassword,
     ResetPassword,
     VerifyEmail,
@@ -43,7 +46,8 @@ import {
     EmployeeSchedule,
     EmployeeEarnings,
     EmployeeReviews,
-    DebugDashboard
+    DebugDashboard,
+    Notifications
 } from './pages';
 
 // Debug (temporary)
@@ -51,8 +55,20 @@ import ApiTest from './debug/ApiTest';
 import ApiDebug from './debug/ApiDebug';
 import AuthDebugger from './debug/AuthDebugger';
 
+// Redirect components for backward compatibility with old notification links
+const RedirectToBooking = () => {
+    const { id } = useParams();
+    return <Navigate to={`/dashboard/booking/${id}`} replace />;
+};
+
+const RedirectToDocuments = () => <Navigate to="/dashboard/worker-documents" replace />;
+const RedirectToReviews = () => <Navigate to="/dashboard/reviews" replace />;
+
 function App() {
     const { fetchUser, isAuthenticated } = useAuthStore();
+
+    // Initialize socket connection for real-time notifications
+    useSocket();
 
     useEffect(() => {
         // Fetch user on app load if token exists
@@ -116,6 +132,8 @@ function App() {
                         <Route path="/dashboard/debug" element={<DebugDashboard />} />
                         <Route path="/dashboard/profile" element={<Profile />} />
                         <Route path="/dashboard/booking/:bookingId" element={<BookingDetails />} />
+                        <Route path="/dashboard/notifications" element={<Notifications />} />
+                        <Route path="/notifications" element={<Notifications />} />
                         <Route path="/debug/api" element={<ApiTest />} />
                     </Route>
                 </Route>
@@ -152,6 +170,13 @@ function App() {
                         <Route path="/dashboard/document-verification" element={<DocumentVerification />} />
                     </Route>
                 </Route>
+
+                {/* Redirect routes for backward compatibility with old notification links */}
+                <Route path="/employee/jobs/:id" element={<RedirectToBooking />} />
+                <Route path="/admin/bookings/:id" element={<RedirectToBooking />} />
+                <Route path="/bookings/:id" element={<RedirectToBooking />} />
+                <Route path="/employee/documents" element={<RedirectToDocuments />} />
+                <Route path="/employee/reviews" element={<RedirectToReviews />} />
 
                 {/* 404 - Not Found */}
                 <Route path="*" element={<NotFound />} />
