@@ -57,12 +57,11 @@ const reviewSchema = new mongoose.Schema({
     },
     moderationNotes: String,
 
-}, {
+}, { 
     timestamps: true
 });
 
-// Indexes
-reviewSchema.index({ booking: 1 });
+// Indexes (booking index is auto-created by unique: true)
 reviewSchema.index({ customer: 1 });
 reviewSchema.index({ employee: 1 });
 reviewSchema.index({ rating: 1 });

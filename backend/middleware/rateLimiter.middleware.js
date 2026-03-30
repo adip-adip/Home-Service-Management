@@ -36,20 +36,20 @@ const createRateLimiter = (options = {}) => {
 
 /**
  * General API rate limiter
- * 100 requests per 15 minutes
+ * 500 requests per 15 minutes
  */
 const apiLimiter = createRateLimiter({
     windowMs: 15 * 60 * 1000,
-    max: 100
+    max: process.env.NODE_ENV === 'production' ? 100 : 500
 });
 
 /**
  * Auth endpoints rate limiter (stricter)
- * 5 attempts per 15 minutes for login/register
+ * 100 attempts per 15 minutes for development (use stricter limits in production)
  */
 const authLimiter = createRateLimiter({
     windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
-    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 10) || 5,
+    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 10) || (process.env.NODE_ENV === 'production' ? 10 : 100),
     message: {
         success: false,
         message: 'Too many authentication attempts',
