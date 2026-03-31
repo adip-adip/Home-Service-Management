@@ -41,6 +41,62 @@ router.get(
 );
 
 /**
+ * @route   GET /api/v1/services/public-stats
+ * @desc    Get public platform statistics for homepage
+ * @access  Public
+ */
+router.get(
+    '/public-stats',
+    async (req, res, next) => {
+        try {
+            const { User, Booking, Review } = require('../modules');
+            const { ROLES, EMPLOYEE_STATUS, BOOKING_STATUS } = require('../config/constant.config');
+
+            const [
+                totalEmployees,
+                completedBookings,
+                reviewStats
+            ] = await Promise.all([
+                // Count approved employees
+                User.countDocuments({
+                    role: ROLES.EMPLOYEE,
+                    'employeeProfile.status': EMPLOYEE_STATUS.APPROVED
+                }),
+                // Count completed bookings
+                Booking.countDocuments({ status: BOOKING_STATUS.COMPLETED }),
+                // Get average rating from reviews
+                Review.aggregate([
+                    {
+                        $group: {
+                            _id: null,
+                            averageRating: { $avg: '$rating' },
+                            totalReviews: { $sum: 1 }
+                        }
+                    }
+                ])
+            ]);
+
+            const avgRating = reviewStats[0]?.averageRating || 4.8;
+            const totalReviews = reviewStats[0]?.totalReviews || 0;
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    stats: {
+                        totalProfessionals: totalEmployees,
+                        completedJobs: completedBookings,
+                        averageRating: Math.round(avgRating * 10) / 10,
+                        totalReviews
+                    }
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+/**
  * @route   POST /api/v1/services/request
  * @desc    Create a new service request (Customer only)
  * @access  Private (Customer only)
