@@ -192,7 +192,7 @@ const EmployeeJobs = () => {
                     {jobs.map((job) => (
                         <div
                             key={job._id}
-                            className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-brand-200 hover:shadow-lg transition-all card-lift"
+                            className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-brand-200 hover:shadow-lg transition-all card-lift flex flex-col h-full"
                         >
                             {/* Card Header */}
                             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -203,7 +203,7 @@ const EmployeeJobs = () => {
                             </div>
 
                             {/* Card Body */}
-                            <div className="p-5">
+                            <div className="p-5 flex-1 flex flex-col">
                                 <h3 className="text-lg font-semibold text-slate-900 mb-4">
                                     {job.serviceCategory || 'Service'}
                                 </h3>
@@ -243,23 +243,25 @@ const EmployeeJobs = () => {
                                     )}
                                 </div>
 
-                                {job.totalAmount && (
-                                    <div className="mt-5 pt-4 border-t border-slate-100">
-                                        <span className="text-xl font-bold text-emerald-600">
-                                            Rs. {job.totalAmount.toLocaleString()}
-                                        </span>
-                                    </div>
-                                )}
+                                <div className="mt-auto pt-4">
+                                    {job.totalAmount && (
+                                        <div className="pt-4 border-t border-slate-100">
+                                            <span className="text-xl font-bold text-emerald-600">
+                                                Rs. {job.totalAmount.toLocaleString()}
+                                            </span>
+                                        </div>
+                                    )}
 
-                                {job.description && (
-                                    <p className="mt-4 text-sm text-slate-500 line-clamp-2">
-                                        {job.description}
-                                    </p>
-                                )}
+                                    {job.description && (
+                                        <p className="mt-4 text-sm text-slate-500 line-clamp-2">
+                                            {job.description}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Card Footer */}
-                            <div className="px-5 py-4 bg-slate-50 flex gap-2 flex-wrap border-t border-slate-100">
+                            <div className="px-5 py-4 bg-slate-50 flex gap-2 flex-wrap border-t border-slate-100 mt-auto">
                                 <Link
                                     to={`/dashboard/booking/${job._id}`}
                                     className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-slate-200 rounded-lg text-slate-700 hover:bg-white hover:border-slate-300 transition-colors"

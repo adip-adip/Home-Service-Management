@@ -3,6 +3,7 @@
  * Clean, organized service listings with refined aesthetics
  */
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FiArrowRight,
@@ -17,77 +18,87 @@ import {
     FiMapPin
 } from 'react-icons/fi';
 import { Navbar } from '../components/layout';
+import { bookingAPI } from '../api';
 
-const serviceCategories = [
+const fallbackCategories = [
     {
+        id: 'plumbing',
         name: 'Plumbing',
         icon: '🔧',
         description: 'Leak repair, pipe installation, drainage fixes and bathroom fittings by certified experts.',
-        startingPrice: 'Rs. 1,200',
+        startingPrice: 1200,
         popular: true,
         services: ['Leak Repair', 'Pipe Installation', 'Drain Cleaning', 'Bathroom Fittings']
     },
     {
+        id: 'electrical',
         name: 'Electrical',
         icon: '⚡',
         description: 'Wiring, switchboard repair, lighting setup and comprehensive safety inspections.',
-        startingPrice: 'Rs. 1,000',
+        startingPrice: 1000,
         popular: true,
         services: ['Wiring', 'Switchboard Repair', 'Lighting Setup', 'Safety Inspection']
     },
     {
+        id: 'cleaning',
         name: 'Home Cleaning',
         icon: '✨',
         description: 'Deep cleaning, kitchen and bathroom sanitization, move-in/out cleaning services.',
-        startingPrice: 'Rs. 1,500',
+        startingPrice: 1500,
         popular: true,
         services: ['Deep Cleaning', 'Kitchen Cleaning', 'Bathroom Sanitization', 'Move-in Cleaning']
     },
     {
+        id: 'carpentry',
         name: 'Carpentry',
         icon: '🪵',
         description: 'Furniture assembly, repairs, custom shelving, and quality wooden fittings.',
-        startingPrice: 'Rs. 1,400',
+        startingPrice: 1400,
         popular: false,
         services: ['Furniture Assembly', 'Wood Repair', 'Custom Shelving', 'Door Fitting']
     },
     {
+        id: 'painting',
         name: 'Painting',
         icon: '🎨',
         description: 'Interior and exterior painting with premium finishes and surface preparation.',
-        startingPrice: 'Rs. 3,000',
+        startingPrice: 3000,
         popular: false,
         services: ['Interior Painting', 'Exterior Painting', 'Wall Texturing', 'Waterproofing']
     },
     {
+        id: 'ac_repair',
         name: 'AC Services',
         icon: '❄️',
         description: 'AC maintenance, gas refill, installation and expert troubleshooting for all brands.',
-        startingPrice: 'Rs. 1,800',
+        startingPrice: 1800,
         popular: true,
         services: ['AC Repair', 'Gas Refill', 'Installation', 'Annual Maintenance']
     },
     {
+        id: 'appliance_repair',
         name: 'Appliance Repair',
         icon: '🔌',
         description: 'Repair services for washing machines, refrigerators, ovens and home appliances.',
-        startingPrice: 'Rs. 1,300',
+        startingPrice: 1300,
         popular: false,
         services: ['Washing Machine', 'Refrigerator', 'Microwave', 'Water Heater']
     },
     {
+        id: 'pest_control',
         name: 'Pest Control',
         icon: '🐛',
         description: 'Safe and effective pest treatments for residential and commercial spaces.',
-        startingPrice: 'Rs. 2,000',
+        startingPrice: 2000,
         popular: false,
         services: ['General Pest Control', 'Termite Treatment', 'Cockroach Control', 'Bed Bug Treatment']
     },
     {
+        id: 'gardening',
         name: 'Gardening',
         icon: '🌱',
         description: 'Garden cleanup, trimming, plant care and professional landscaping support.',
-        startingPrice: 'Rs. 1,100',
+        startingPrice: 1100,
         popular: false,
         services: ['Garden Cleanup', 'Lawn Mowing', 'Plant Care', 'Landscaping']
     }
@@ -112,6 +123,25 @@ const highlights = [
 ];
 
 const Services = () => {
+    const [serviceCategories, setServiceCategories] = useState(fallbackCategories);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await bookingAPI.getServiceCategories();
+                if (response.success && response.data?.categories?.length > 0) {
+                    setServiceCategories(response.data.categories);
+                }
+            } catch (error) {
+                // Fallback to default categories on error
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const formatPrice = (price) => {
+        return `Rs. ${price.toLocaleString()}`;
+    };
     return (
         <div className="min-h-screen bg-slate-25">
             <Navbar />
@@ -180,30 +210,34 @@ const Services = () => {
                         {serviceCategories.map((service, index) => (
                             <div
                                 key={index}
-                                className="group bg-white rounded-2xl border border-slate-200/80 hover:border-brand-200 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 card-lift overflow-hidden"
+                                className="group bg-white rounded-2xl border border-slate-200/80 hover:border-brand-200 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 card-lift overflow-hidden flex flex-col h-full"
                             >
-                                <div className="p-6">
-                                    {service.popular && (
-                                        <span className="inline-flex items-center px-2.5 py-1 bg-brand-50 text-brand-700 text-xs font-semibold rounded-full mb-4">
-                                            Popular
-                                        </span>
-                                    )}
-                                    <div className="flex items-start justify-between mb-4">
-                                        <span className="text-4xl">{service.icon}</span>
-                                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center gap-1">
-                                            <FiCheckCircle className="w-3 h-3" />
-                                            Available
-                                        </span>
+                                <div className="p-6 flex-1 flex flex-col">
+                                    <div className="mb-4">
+                                        {service.popular && (
+                                            <span className="inline-flex items-center px-2.5 py-1 bg-brand-50 text-brand-700 text-xs font-semibold rounded-full mb-4">
+                                                Popular
+                                            </span>
+                                        )}
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-4xl">{service.icon}</span>
+                                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                                <FiCheckCircle className="w-3 h-3" />
+                                                Available
+                                            </span>
+                                        </div>
                                     </div>
+
                                     <h3 className="text-xl font-semibold text-slate-900 mb-2 group-hover:text-brand-700 transition-colors">
                                         {service.name}
                                     </h3>
-                                    <p className="text-slate-600 text-sm leading-relaxed mb-4">
+
+                                    <p className="text-slate-600 text-sm leading-relaxed mb-4 flex-1">
                                         {service.description}
                                     </p>
 
                                     {/* Service Tags */}
-                                    <div className="flex flex-wrap gap-2 mb-4">
+                                    <div className="flex flex-wrap gap-2 mt-auto">
                                         {service.services.slice(0, 3).map((s, i) => (
                                             <span key={i} className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
                                                 {s}
@@ -218,7 +252,7 @@ const Services = () => {
                                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                                     <div>
                                         <span className="text-xs text-slate-500">Starting from</span>
-                                        <p className="text-lg font-bold text-slate-900">{service.startingPrice}</p>
+                                        <p className="text-lg font-bold text-slate-900">{formatPrice(service.startingPrice)}</p>
                                     </div>
                                     <Link
                                         to="/register"
