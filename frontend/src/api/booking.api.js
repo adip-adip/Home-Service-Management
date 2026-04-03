@@ -5,6 +5,12 @@
 import api from './axios';
 
 export const bookingAPI = {
+    // Get public platform statistics (for homepage)
+    getPublicStats: async () => {
+        const response = await api.get('/services/public-stats');
+        return response.data;
+    },
+
     // Create a new booking
     createBooking: async (bookingData) => {
         const response = await api.post('/bookings', bookingData);
