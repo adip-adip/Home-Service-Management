@@ -1,14 +1,15 @@
 /**
  * Employee Jobs Page
  * Displays list of employee's assigned jobs with actions
+ * Updated with premium theme styling
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-    FiBriefcase, FiClock, FiUser, FiMapPin, 
+import {
+    FiBriefcase, FiClock, FiUser, FiMapPin,
     FiCheckCircle, FiXCircle, FiRefreshCw, FiPlay,
-    FiPhone, FiCalendar
+    FiPhone, FiCalendar, FiChevronRight
 } from 'react-icons/fi';
 import { bookingAPI } from '../../api';
 import { useAuthStore } from '../../store';
@@ -61,7 +62,7 @@ const EmployeeJobs = () => {
     const handleReject = async (bookingId) => {
         const reason = window.prompt('Please provide a reason for rejection:');
         if (!reason) return;
-        
+
         try {
             await bookingAPI.rejectBooking(bookingId, reason);
             toast.success('Job rejected');
@@ -101,14 +102,14 @@ const EmployeeJobs = () => {
     const getStatusColor = (status) => {
         const normalized = normalizeStatus(status);
         const colors = {
-            pending: 'bg-yellow-100 text-yellow-800',
-            confirmed: 'bg-blue-100 text-blue-800',
-            'in-progress': 'bg-purple-100 text-purple-800',
-            completed: 'bg-green-100 text-green-800',
-            cancelled: 'bg-gray-100 text-gray-800',
-            rejected: 'bg-red-100 text-red-800'
+            pending: 'bg-amber-50 text-amber-700 border-amber-200',
+            confirmed: 'bg-brand-50 text-brand-700 border-brand-200',
+            'in-progress': 'bg-violet-50 text-violet-700 border-violet-200',
+            completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
+            rejected: 'bg-red-50 text-red-700 border-red-200'
         };
-        return colors[normalized] || 'bg-gray-100 text-gray-800';
+        return colors[normalized] || 'bg-slate-100 text-slate-700 border-slate-200';
     };
 
     const formatDate = (dateString) => {
@@ -124,153 +125,185 @@ const EmployeeJobs = () => {
         return timeString || 'TBD';
     };
 
+    const filterTabs = [
+        { key: 'all', label: 'All Jobs' },
+        { key: 'pending', label: 'Pending' },
+        { key: 'confirmed', label: 'Confirmed' },
+        { key: 'in-progress', label: 'In Progress' },
+        { key: 'completed', label: 'Completed' }
+    ];
+
     if (loading) {
         return (
             <div className="p-6">
                 <div className="flex flex-col items-center justify-center py-20">
-                    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-gray-600">Loading your jobs...</p>
+                    <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-slate-500">Loading your jobs...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">My Jobs</h1>
-                    <p className="text-gray-600">Manage your assigned service requests</p>
+                    <h1 className="text-2xl font-bold text-slate-900">My Jobs</h1>
+                    <p className="text-slate-500 mt-1">Manage your assigned service requests</p>
                 </div>
-                <button 
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                <button
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all font-medium text-sm shadow-sm"
                     onClick={fetchJobs}
                 >
-                    <FiRefreshCw /> Refresh
+                    <FiRefreshCw className="w-4 h-4" />
+                    Refresh
                 </button>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6 p-1 bg-gray-100 rounded-lg w-fit">
-                {['all', 'pending', 'confirmed', 'in-progress', 'completed'].map((tab) => (
-                    <button 
-                        key={tab}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                            filter === tab 
-                                ? 'bg-white text-blue-600 shadow-sm' 
-                                : 'text-gray-600 hover:text-gray-800'
+            <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100 rounded-xl w-fit">
+                {filterTabs.map((tab) => (
+                    <button
+                        key={tab.key}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            filter === tab.key
+                                ? 'bg-white text-brand-600 shadow-sm'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                         }`}
-                        onClick={() => setFilter(tab)}
+                        onClick={() => setFilter(tab.key)}
                     >
-                        {tab === 'all' ? 'All Jobs' : tab.charAt(0).toUpperCase() + tab.slice(1).replace('-', ' ')}
+                        {tab.label}
                     </button>
                 ))}
             </div>
 
             {/* Jobs List */}
             {jobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl">
-                    <FiBriefcase className="text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No jobs found</h3>
-                    <p className="text-gray-600">You don't have any assigned jobs yet.</p>
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200">
+                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                        <FiBriefcase className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">No jobs found</h3>
+                    <p className="text-slate-500">You don't have any assigned jobs yet.</p>
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     {jobs.map((job) => (
-                        <div key={job._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(job.status)}`}>
+                        <div
+                            key={job._id}
+                            className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-brand-200 hover:shadow-lg transition-all card-lift"
+                        >
+                            {/* Card Header */}
+                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize border ${getStatusColor(job.status)}`}>
                                     {job.status.replace('-', ' ')}
                                 </span>
-                                <span className="text-sm text-gray-500">#{job._id.slice(-8)}</span>
+                                <span className="text-xs text-slate-400 font-mono">#{job._id.slice(-8)}</span>
                             </div>
 
-                            <div className="p-4">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                            {/* Card Body */}
+                            <div className="p-5">
+                                <h3 className="text-lg font-semibold text-slate-900 mb-4">
                                     {job.serviceCategory || 'Service'}
                                 </h3>
-                                
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <FiUser className="text-gray-400" />
+
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex items-center gap-3 text-slate-600">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <FiUser className="w-4 h-4 text-slate-500" />
+                                        </div>
                                         <span>{job.customer?.fullName || 'Customer'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <FiPhone className="text-gray-400" />
+                                    <div className="flex items-center gap-3 text-slate-600">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <FiPhone className="w-4 h-4 text-slate-500" />
+                                        </div>
                                         <span>{job.customer?.phone || job.customerPhone || 'N/A'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <FiCalendar className="text-gray-400" />
+                                    <div className="flex items-center gap-3 text-slate-600">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <FiCalendar className="w-4 h-4 text-slate-500" />
+                                        </div>
                                         <span>{formatDate(job.scheduledDate)}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <FiClock className="text-gray-400" />
+                                    <div className="flex items-center gap-3 text-slate-600">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <FiClock className="w-4 h-4 text-slate-500" />
+                                        </div>
                                         <span>{formatTime(job.scheduledTime)}</span>
                                     </div>
                                     {job.address && (
-                                        <div className="flex items-center gap-2 text-gray-600">
-                                            <FiMapPin className="text-gray-400" />
+                                        <div className="flex items-center gap-3 text-slate-600">
+                                            <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <FiMapPin className="w-4 h-4 text-slate-500" />
+                                            </div>
                                             <span className="truncate">{job.address}</span>
                                         </div>
                                     )}
                                 </div>
 
                                 {job.totalAmount && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100">
-                                        <span className="text-lg font-bold text-green-600">
+                                    <div className="mt-5 pt-4 border-t border-slate-100">
+                                        <span className="text-xl font-bold text-emerald-600">
                                             Rs. {job.totalAmount.toLocaleString()}
                                         </span>
                                     </div>
                                 )}
 
                                 {job.description && (
-                                    <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+                                    <p className="mt-4 text-sm text-slate-500 line-clamp-2">
                                         {job.description}
                                     </p>
                                 )}
                             </div>
 
-                            <div className="p-4 bg-gray-50 flex gap-2 flex-wrap">
-                                <Link 
-                                    to={`/dashboard/booking/${job._id}`} 
-                                    className="px-3 py-2 text-center text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                            {/* Card Footer */}
+                            <div className="px-5 py-4 bg-slate-50 flex gap-2 flex-wrap border-t border-slate-100">
+                                <Link
+                                    to={`/dashboard/booking/${job._id}`}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-slate-200 rounded-lg text-slate-700 hover:bg-white hover:border-slate-300 transition-colors"
                                 >
                                     View Details
+                                    <FiChevronRight className="w-4 h-4" />
                                 </Link>
-                                
+
                                 {normalizeStatus(job.status) === 'pending' && (
                                     <>
-                                        <button 
-                                            className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                                        <button
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
                                             onClick={() => handleAccept(job._id)}
                                         >
-                                            <FiCheckCircle /> Accept
+                                            <FiCheckCircle className="w-4 h-4" />
+                                            Accept
                                         </button>
-                                        <button 
-                                            className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
+                                        <button
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-sm"
                                             onClick={() => handleReject(job._id)}
                                         >
-                                            <FiXCircle /> Reject
+                                            <FiXCircle className="w-4 h-4" />
+                                            Reject
                                         </button>
                                     </>
                                 )}
 
                                 {normalizeStatus(job.status) === 'confirmed' && (
-                                    <button 
-                                        className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                    <button
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors shadow-sm"
                                         onClick={() => handleStart(job._id)}
                                     >
-                                        <FiPlay /> Start Job
+                                        <FiPlay className="w-4 h-4" />
+                                        Start Job
                                     </button>
                                 )}
 
                                 {normalizeStatus(job.status) === 'in-progress' && (
-                                    <button 
-                                        className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                                    <button
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
                                         onClick={() => handleComplete(job._id)}
                                     >
-                                        <FiCheckCircle /> Complete
+                                        <FiCheckCircle className="w-4 h-4" />
+                                        Complete
                                     </button>
                                 )}
                             </div>
