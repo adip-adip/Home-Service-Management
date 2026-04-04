@@ -6,6 +6,7 @@
 const { Server } = require('socket.io');
 const { verifyAccessToken } = require('../utilitis/jwt.helper');
 const User = require('../modules/user.module');
+const { registerLocationEvents } = require('../socket/location.socket');
 
 // Store for user socket mappings
 const userSockets = new Map(); // userId -> Set of socketIds
@@ -108,6 +109,9 @@ const initializeSocket = (server) => {
         socket.on('error', (error) => {
             console.error(`Socket error for user ${userId}:`, error);
         });
+
+        // Register location tracking events
+        registerLocationEvents(socket, io);
 
         // Emit connection success
         socket.emit('connected', {

@@ -60,6 +60,12 @@ const bookingSchema = new mongoose.Schema({
         required: [true, 'Service address is required']
     },
 
+    // Service location coordinates (for map display)
+    serviceCoordinates: {
+        latitude: Number,
+        longitude: Number
+    },
+
     // Customer phone for this booking
     customerPhone: {
         type: String
@@ -145,6 +151,25 @@ const bookingSchema = new mongoose.Schema({
     employeeNotes: {
         type: String,
         maxlength: [500, 'Notes cannot exceed 500 characters']
+    },
+
+    // Employee last known location (for live tracking)
+    employeeLastLocation: {
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            default: undefined
+        },
+        heading: {
+            type: Number,
+            default: 0
+        },
+        speed: {
+            type: Number,
+            default: 0
+        },
+        updatedAt: {
+            type: Date
+        }
     },
 
     // Review reference (after completion)
