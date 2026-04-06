@@ -16,18 +16,19 @@ class BookingService {
      * @returns {Promise<Object>} Created booking
      */
     async createBooking(bookingData, customerId) {
-        const { 
-            employee, 
+        const {
+            employee,
             employeeId,
-            serviceCategory, 
-            description, 
-            scheduledDate, 
-            scheduledTime, 
+            serviceCategory,
+            description,
+            scheduledDate,
+            scheduledTime,
             address,
-            serviceAddress, 
-            estimatedDuration, 
+            serviceAddress,
+            addressCoordinates,
+            estimatedDuration,
             customerNotes,
-            customerPhone 
+            customerPhone
         } = bookingData;
 
         // Support both 'employee' and 'employeeId' field names
@@ -74,6 +75,7 @@ class BookingService {
             scheduledTime,
             estimatedDuration: estimatedDuration || 1,
             serviceAddress: address || serviceAddress,
+            serviceCoordinates: addressCoordinates || null,
             customerPhone,
             estimatedPrice,
             customerNotes,
