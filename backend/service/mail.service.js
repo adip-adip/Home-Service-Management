@@ -28,9 +28,9 @@ class MailService {
 
             this.transporter = nodemailer.createTransport(config);
             this.initialized = true;
-            console.log('📧 Mail service initialized successfully');
+            console.log(' Mail service initialized successfully');
         } catch (error) {
-            console.error('❌ Mail service initialization failed:', error.message);
+            console.error(' Mail service initialization failed:', error.message);
             throw error;
         }
     }
@@ -45,10 +45,10 @@ class MailService {
 
         try {
             await this.transporter.verify();
-            console.log('✅ Mail server connection verified');
+            console.log(' Mail server connection verified');
             return true;
         } catch (error) {
-            console.error('❌ Mail server connection failed:', error.message);
+            console.error(' Mail server connection failed:', error.message);
             return false;
         }
     }
@@ -73,10 +73,10 @@ class MailService {
 
         try {
             const info = await this.transporter.sendMail(mailOptions);
-            console.log(`📨 Email sent: ${info.messageId}`);
+            console.log(` Email sent: ${info.messageId}`);
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error('❌ Email sending failed:', error.message);
+            console.error(' Email sending failed:', error.message);
             return { success: false, error: error.message };
         }
     }
@@ -189,7 +189,7 @@ class MailService {
                         <p>Or copy and paste this link in your browser:</p>
                         <p style="word-break: break-all; color: #f5576c;">${resetUrl}</p>
                         <div class="warning">
-                            <strong>⚠️ Important:</strong>
+                            <strong> Important:</strong>
                             <ul>
                                 <li>This link will expire in 1 hour</li>
                                 <li>If you didn't request this reset, please ignore this email</li>
@@ -260,7 +260,7 @@ class MailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>🎉 Email Verified!</h1>
+                        <h1> Email Verified!</h1>
                     </div>
                     <div class="content">
                         <h2>Welcome ${firstName}!</h2>
@@ -295,7 +295,7 @@ class MailService {
      */
     async sendEmployeeApprovalEmail(email, firstName, approved, reason = '') {
         const subject = approved 
-            ? '🎉 Your Account Has Been Approved!' 
+            ? ' Your Account Has Been Approved!' 
             : 'Account Application Update';
 
         const html = approved ? `
@@ -314,7 +314,7 @@ class MailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>🎉 Congratulations!</h1>
+                        <h1> Congratulations!</h1>
                     </div>
                     <div class="content">
                         <h2>Hi ${firstName},</h2>
