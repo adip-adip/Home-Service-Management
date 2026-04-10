@@ -10,6 +10,7 @@ import { Loading } from '../common';
 const ProtectedRoute = ({ allowedRoles = [] }) => {
     const { isAuthenticated, user, isLoading } = useAuthStore();
     const location = useLocation();
+    const hasToken = !!localStorage.getItem('accessToken');
 
     if (isLoading) {
         return (
@@ -19,7 +20,7 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
         );
     }
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !hasToken) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 

@@ -9,6 +9,7 @@ import { Loading } from '../common';
 
 const GuestRoute = () => {
     const { isAuthenticated, isLoading } = useAuthStore();
+    const hasToken = !!localStorage.getItem('accessToken');
 
     if (isLoading) {
         return (
@@ -18,7 +19,7 @@ const GuestRoute = () => {
         );
     }
 
-    if (isAuthenticated) {
+    if (isAuthenticated && hasToken) {
         return <Navigate to="/dashboard" replace />;
     }
 
