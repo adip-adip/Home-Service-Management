@@ -15,7 +15,10 @@ const NotificationBell = () => {
 
     // Fetch unread count on mount
     useEffect(() => {
-        fetchUnreadCount();
+        const hasToken = !!localStorage.getItem('accessToken');
+        if (hasToken) {
+            fetchUnreadCount();
+        }
     }, [fetchUnreadCount]);
 
     // Close dropdown when clicking outside
