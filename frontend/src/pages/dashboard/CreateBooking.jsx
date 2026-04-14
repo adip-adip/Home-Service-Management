@@ -3,13 +3,15 @@
  * Allows customers to book a service
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    FiUser, FiCalendar, FiClock, FiMapPin, 
-    FiFileText, FiSend, FiArrowLeft, FiCheck
+import {
+    FiUser, FiCalendar, FiClock, FiMapPin,
+    FiFileText, FiSend, FiArrowLeft, FiCheck,
+    FiInfo, FiX, FiBriefcase, FiDollarSign, FiStar, FiAward, FiRefreshCw
 } from 'react-icons/fi';
 import { bookingAPI } from '../../api';
+import { LocationPicker } from '../../components/map';
 import toast from 'react-hot-toast';
 
 const SERVICE_CATEGORIES = [
@@ -37,6 +39,7 @@ const CreateBooking = () => {
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
+    const [selectedEmployeeInfo, setSelectedEmployeeInfo] = useState(null);
 
     const [formData, setFormData] = useState({
         serviceCategory: '',
@@ -44,31 +47,70 @@ const CreateBooking = () => {
         scheduledDate: '',
         scheduledTime: '',
         address: '',
+        addressCoordinates: null,
         description: '',
         customerPhone: ''
     });
 
-    useEffect(() => {
-        const fetchEmployees = async () => {
-            if (!formData.serviceCategory) {
-                setEmployees([]);
-                return;
+    // Fetch employees function - memoized for reuse
+    const fetchEmployees = useCallback(async (showLoading = true) => {
+        if (!formData.serviceCategory) {
+            setEmployees([]);
+            return;
+        }
+
+        try {
+            if (showLoading) setLoadingEmployees(true);
+            const response = await bookingAPI.getAvailableEmployees(formData.serviceCategory);
+            const newEmployees = response.data?.employees || [];
+            setEmployees(newEmployees);
+
+            // Update selected employee info if it exists in the new data
+            if (selectedEmployeeInfo) {
+                const updatedEmployee = newEmployees.find(e => e._id === selectedEmployeeInfo._id);
+                if (updatedEmployee) {
+                    setSelectedEmployeeInfo(updatedEmployee);
+                } else {
+                    // Employee no longer available, close modal
+                    setSelectedEmployeeInfo(null);
+                }
             }
 
-            try {
-                setLoadingEmployees(true);
-                const response = await bookingAPI.getAvailableEmployees(formData.serviceCategory);
-                setEmployees(response.data?.employees || []);
-            } catch (error) {
-                console.error('Failed to fetch employees:', error);
-                setEmployees([]);
-            } finally {
-                setLoadingEmployees(false);
+            // If selected employee is no longer in the list, reset selection
+            if (formData.employee && !newEmployees.find(e => e._id === formData.employee)) {
+                setFormData(prev => ({ ...prev, employee: '' }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch employees:', error);
+            setEmployees([]);
+        } finally {
+            if (showLoading) setLoadingEmployees(false);
+        }
+    }, [formData.serviceCategory, formData.employee, selectedEmployeeInfo]);
+
+    // Fetch employees when service category changes
+    useEffect(() => {
+        fetchEmployees();
+    }, [formData.serviceCategory]);
+
+    // Refetch employees when page becomes visible (user switches tabs back)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && formData.serviceCategory) {
+                fetchEmployees(false); // Silently refresh without loading indicator
             }
         };
 
-        fetchEmployees();
-    }, [formData.serviceCategory]);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [formData.serviceCategory, fetchEmployees]);
+
+    // Manual refresh handler
+    const handleRefreshEmployees = () => {
+        if (!loadingEmployees) {
+            fetchEmployees();
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -211,7 +253,19 @@ const CreateBooking = () => {
                 {/* Step 2: Choose Employee */}
                 {step === 2 && (
                     <div>
-                        <h2 className="text-xl font-semibold text-gray-800 mb-6">Choose a Service Provider</h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-semibold text-gray-800">Choose a Service Provider</h2>
+                            <button
+                                type="button"
+                                onClick={handleRefreshEmployees}
+                                disabled={loadingEmployees}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                title="Refresh providers list"
+                            >
+                                <FiRefreshCw className={`${loadingEmployees ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </button>
+                        </div>
                         {loadingEmployees ? (
                             <div className="flex flex-col items-center justify-center py-12">
                                 <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -229,36 +283,90 @@ const CreateBooking = () => {
                                     <div
                                         key={employee._id}
                                         className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                            formData.employee === employee._id 
-                                                ? 'border-blue-600 bg-blue-50' 
+                                            formData.employee === employee._id
+                                                ? 'border-blue-600 bg-blue-50'
                                                 : 'border-gray-200 hover:border-blue-400'
                                         }`}
                                         onClick={() => handleEmployeeSelect(employee._id)}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-14 h-14 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                                 {employee.avatar?.url ? (
                                                     <img src={employee.avatar.url} alt={`${employee.firstName} ${employee.lastName}`} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <FiUser className="text-xl text-gray-500" />
                                                 )}
                                             </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-800">{employee.firstName} {employee.lastName}</h4>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <h4 className="font-semibold text-gray-800 truncate">{employee.firstName} {employee.lastName}</h4>
+                                                    {formData.employee === employee._id && (
+                                                        <div className="w-5 h-5 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center">
+                                                            <FiCheck className="text-white text-xs" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <p className="text-sm text-gray-600 capitalize">
                                                     {employee.employeeProfile?.serviceCategories?.[0] || formData.serviceCategory}
                                                 </p>
-                                                {employee.employeeProfile?.rating?.average && (
-                                                    <div className="text-sm text-yellow-600">
-                                                        ⭐ {employee.employeeProfile.rating.average.toFixed(1)}
+
+                                                {/* Rating and Reviews */}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {employee.employeeProfile?.rating?.average ? (
+                                                        <div className="flex items-center gap-1 text-sm text-yellow-600">
+                                                            <FiStar className="fill-yellow-500" />
+                                                            <span>{employee.employeeProfile.rating.average.toFixed(1)}</span>
+                                                            {employee.employeeProfile?.rating?.count > 0 && (
+                                                                <span className="text-gray-500">({employee.employeeProfile.rating.count})</span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-sm text-gray-400">No reviews yet</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Price and Stats */}
+                                        <div className="mt-3 pt-3 border-t border-gray-100">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1 text-green-600 font-semibold">
+                                                    <FiDollarSign className="text-sm" />
+                                                    <span>
+                                                        {employee.employeeProfile?.hourlyRate
+                                                            ? `Rs. ${employee.employeeProfile.hourlyRate}/hr`
+                                                            : 'Price on request'
+                                                        }
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedEmployeeInfo(employee);
+                                                    }}
+                                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                                    title="View details"
+                                                >
+                                                    <FiInfo className="text-lg" />
+                                                </button>
+                                            </div>
+
+                                            {/* Experience and Jobs */}
+                                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                                {employee.employeeProfile?.experience > 0 && (
+                                                    <div className="flex items-center gap-1">
+                                                        <FiBriefcase />
+                                                        <span>{employee.employeeProfile.experience} yrs exp</span>
+                                                    </div>
+                                                )}
+                                                {employee.employeeProfile?.completedJobs > 0 && (
+                                                    <div className="flex items-center gap-1">
+                                                        <FiAward />
+                                                        <span>{employee.employeeProfile.completedJobs} jobs done</span>
                                                     </div>
                                                 )}
                                             </div>
-                                            {formData.employee === employee._id && (
-                                                <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                                                    <FiCheck className="text-white text-sm" />
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -327,19 +435,20 @@ const CreateBooking = () => {
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="address" className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                <FiMapPin /> Address *
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                <FiMapPin /> Service Location *
                             </label>
-                            <input
-                                type="text"
-                                id="address"
-                                name="address"
+                            <LocationPicker
                                 value={formData.address}
-                                onChange={handleChange}
-                                placeholder="Enter your full address"
+                                coordinates={formData.addressCoordinates}
+                                onChange={(address) => setFormData(prev => ({ ...prev, address }))}
+                                onCoordinatesChange={(coords) => setFormData(prev => ({ ...prev, addressCoordinates: coords }))}
+                                placeholder="Enter address or use current location"
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
                             />
+                            <p className="mt-1 text-xs text-gray-500">
+                                You can type an address, use your current location, or pick on the map
+                            </p>
                         </div>
 
                         <div className="mb-4">
@@ -387,6 +496,15 @@ const CreateBooking = () => {
                                         return emp ? `${emp.firstName} ${emp.lastName}` : 'Selected';
                                     })()}</span>
                                 </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Rate:</span>
+                                    <span className="font-medium text-green-600">{(() => {
+                                        const emp = employees.find(e => e._id === formData.employee);
+                                        return emp?.employeeProfile?.hourlyRate
+                                            ? `Rs. ${emp.employeeProfile.hourlyRate}/hr`
+                                            : 'Price on request';
+                                    })()}</span>
+                                </div>
                                 {formData.scheduledDate && (
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Date:</span>
@@ -421,6 +539,147 @@ const CreateBooking = () => {
                     </div>
                 )}
             </form>
+
+            {/* Employee Info Modal */}
+            {selectedEmployeeInfo && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedEmployeeInfo(null)}>
+                    <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b">
+                            <h3 className="text-lg font-semibold text-gray-800">Provider Details</h3>
+                            <button
+                                onClick={() => setSelectedEmployeeInfo(null)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <FiX className="text-xl text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-4">
+                            {/* Profile Header */}
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-20 h-20 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {selectedEmployeeInfo.avatar?.url ? (
+                                        <img src={selectedEmployeeInfo.avatar.url} alt={`${selectedEmployeeInfo.firstName} ${selectedEmployeeInfo.lastName}`} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <FiUser className="text-3xl text-gray-500" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h4 className="text-xl font-semibold text-gray-800">
+                                        {selectedEmployeeInfo.firstName} {selectedEmployeeInfo.lastName}
+                                    </h4>
+                                    <p className="text-gray-600 capitalize">
+                                        {selectedEmployeeInfo.employeeProfile?.serviceCategories?.join(', ') || formData.serviceCategory}
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-1">
+                                        {selectedEmployeeInfo.employeeProfile?.rating?.average ? (
+                                            <div className="flex items-center gap-1 text-yellow-600">
+                                                <FiStar className="fill-yellow-500" />
+                                                <span className="font-medium">{selectedEmployeeInfo.employeeProfile.rating.average.toFixed(1)}</span>
+                                                <span className="text-gray-500 text-sm">({selectedEmployeeInfo.employeeProfile.rating.count || 0} reviews)</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 text-sm">No reviews yet</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Price */}
+                            <div className="bg-green-50 rounded-lg p-3 mb-4">
+                                <div className="flex items-center gap-2 text-green-700">
+                                    <FiDollarSign className="text-xl" />
+                                    <span className="text-lg font-semibold">
+                                        {selectedEmployeeInfo.employeeProfile?.hourlyRate
+                                            ? `Rs. ${selectedEmployeeInfo.employeeProfile.hourlyRate} per hour`
+                                            : 'Price on request'
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                    <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                                        <FiBriefcase />
+                                        <span className="font-semibold">{selectedEmployeeInfo.employeeProfile?.experience || 0} years</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">Experience</p>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                    <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                                        <FiAward />
+                                        <span className="font-semibold">{selectedEmployeeInfo.employeeProfile?.completedJobs || 0}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">Jobs Completed</p>
+                                </div>
+                            </div>
+
+                            {/* Bio */}
+                            {selectedEmployeeInfo.employeeProfile?.bio && (
+                                <div className="mb-4">
+                                    <h5 className="font-medium text-gray-800 mb-2">About</h5>
+                                    <p className="text-gray-600 text-sm leading-relaxed">
+                                        {selectedEmployeeInfo.employeeProfile.bio}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Skills */}
+                            {selectedEmployeeInfo.employeeProfile?.skills?.length > 0 && (
+                                <div className="mb-4">
+                                    <h5 className="font-medium text-gray-800 mb-2">Skills</h5>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedEmployeeInfo.employeeProfile.skills.map((skill, index) => (
+                                            <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Working Hours */}
+                            {selectedEmployeeInfo.employeeProfile?.availability?.workingHours && (
+                                <div className="mb-4">
+                                    <h5 className="font-medium text-gray-800 mb-2">Working Hours</h5>
+                                    <div className="flex items-center gap-2 text-gray-600 text-sm">
+                                        <FiClock />
+                                        <span>
+                                            {selectedEmployeeInfo.employeeProfile.availability.workingHours.start || '9:00 AM'} - {selectedEmployeeInfo.employeeProfile.availability.workingHours.end || '6:00 PM'}
+                                        </span>
+                                    </div>
+                                    {selectedEmployeeInfo.employeeProfile.availability.workingDays?.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {selectedEmployeeInfo.employeeProfile.availability.workingDays.map((day, index) => (
+                                                <span key={index} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded capitalize">
+                                                    {day}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t bg-gray-50">
+                            <button
+                                onClick={() => {
+                                    handleEmployeeSelect(selectedEmployeeInfo._id);
+                                    setSelectedEmployeeInfo(null);
+                                }}
+                                className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                            >
+                                Select This Provider
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

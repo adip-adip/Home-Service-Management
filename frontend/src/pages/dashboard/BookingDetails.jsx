@@ -5,13 +5,15 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-    FiArrowLeft, FiCalendar, FiClock, FiUser, FiMapPin, 
+import {
+    FiArrowLeft, FiCalendar, FiClock, FiUser, FiMapPin,
     FiPhone, FiMail, FiCheckCircle, FiXCircle, FiPlay,
-    FiFileText, FiDollarSign, FiAlertCircle, FiStar, FiAlertTriangle
+    FiFileText, FiDollarSign, FiAlertCircle, FiStar, FiAlertTriangle,
+    FiNavigation
 } from 'react-icons/fi';
 import { bookingAPI } from '../../api';
 import { useAuthStore } from '../../store';
+import { EmployeeLocationTracker, CustomerLocationViewer } from '../../components/map';
 import toast from 'react-hot-toast';
 
 const BookingDetails = () => {
@@ -20,6 +22,7 @@ const BookingDetails = () => {
     const { user, isAuthenticated } = useAuthStore();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showLocationTracker, setShowLocationTracker] = useState(false);
     const hasFetched = useRef(false);
     const reviewSectionRef = useRef(null);
 
@@ -312,6 +315,55 @@ const BookingDetails = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Live Location Tracking Section */}
+                {['confirmed', 'in-progress'].includes(normalizeStatus(booking.status)) && (
+                    <div>
+                        {showLocationTracker ? (
+                            isEmployee ? (
+                                <EmployeeLocationTracker
+                                    bookingId={booking._id}
+                                    customerLocation={booking.serviceCoordinates}
+                                    serviceAddress={booking.address || booking.serviceAddress}
+                                    onClose={() => setShowLocationTracker(false)}
+                                />
+                            ) : (
+                                <CustomerLocationViewer
+                                    bookingId={booking._id}
+                                    customerLocation={booking.serviceCoordinates}
+                                    serviceAddress={booking.address || booking.serviceAddress}
+                                    onClose={() => setShowLocationTracker(false)}
+                                />
+                            )
+                        ) : (
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-100 rounded-full">
+                                            <FiNavigation className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-800">Live Location</h3>
+                                            <p className="text-sm text-gray-500">
+                                                {isEmployee
+                                                    ? 'Share your location with the customer'
+                                                    : 'Track the service provider\'s location in real-time'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowLocationTracker(true)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                    >
+                                        <FiNavigation className="w-4 h-4" />
+                                        {isEmployee ? 'Share Location' : 'Track Location'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Status History */}
                 {deduplicatedStatusHistory.length > 0 && (
