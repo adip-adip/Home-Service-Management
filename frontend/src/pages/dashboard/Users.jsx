@@ -156,15 +156,49 @@ const Users = () => {
         if (!editingUser) return;
 
         try {
-            await adminAPI.updateUser(editingUser.id, {
+            const response = await adminAPI.updateUser(editingUser.id, {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 role: editingUser.role,
                 status: editingUser.status
             });
+
+            // Optimistically update local state for immediate UI feedback
+            const updatedUserData = response?.data?.user || response?.user || {
+                _id: editingUser.id,
+                firstName: editingUser.firstName,
+                lastName: editingUser.lastName,
+                role: editingUser.role,
+                status: editingUser.status
+            };
+
+            setUsers(prevUsers => {
+                // If role changed and we're on a role-specific page, remove the user
+                const roleChanged = prevUsers.find(u => u._id === editingUser.id)?.role !== editingUser.role;
+
+                if (roleChanged) {
+                    // If on employees page and role changed from employee, or
+                    // if on users page and role changed to employee, remove from list
+                    if ((isEmployeePage && editingUser.role !== 'employee') ||
+                        (!isEmployeePage && editingUser.role === 'employee')) {
+                        return prevUsers.filter(u => u._id !== editingUser.id);
+                    }
+                }
+
+                // Otherwise update the user in place
+                return prevUsers.map(u =>
+                    u._id === editingUser.id
+                        ? { ...u, ...updatedUserData }
+                        : u
+                );
+            });
+
             toast.success('User updated successfully');
             setIsEditModalOpen(false);
             setEditingUser(null);
+
+            // Also refetch to ensure consistency with server
+            isFetching.current = false; // Reset to allow refetch
             fetchUsers(currentPage, searchQuery);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update user');
@@ -173,13 +207,23 @@ const Users = () => {
 
     const handleDelete = async (userId) => {
         if (!window.confirm('Are you sure you want to delete this user?')) return;
-        
+
         try {
             await adminAPI.deleteUser(userId);
+
+            // Optimistically remove from local state for immediate UI feedback
+            setUsers(prevUsers => prevUsers.filter(u => u._id !== userId));
+
             toast.success('User deleted successfully');
+
+            // Also refetch to ensure consistency with server
+            isFetching.current = false; // Reset to allow refetch
             fetchUsers(currentPage, searchQuery);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to delete user');
+            // Refetch to restore state if delete failed
+            isFetching.current = false;
+            fetchUsers(currentPage, searchQuery);
         }
     };
 
@@ -187,10 +231,22 @@ const Users = () => {
         const badges = {
             active: 'bg-green-100 text-green-700',
             inactive: 'bg-gray-100 text-gray-700',
-            suspended: 'bg-red-100 text-red-700',
-            pending: 'bg-amber-100 text-amber-700'
+            blocked: 'bg-red-100 text-red-700',
+            pending_verification: 'bg-amber-100 text-amber-700',
+            pending_approval: 'bg-blue-100 text-blue-700'
         };
         return badges[status] || 'bg-gray-100 text-gray-700';
+    };
+
+    const formatStatus = (status) => {
+        const statusLabels = {
+            active: 'Active',
+            inactive: 'Inactive',
+            blocked: 'Blocked',
+            pending_verification: 'Pending Verification',
+            pending_approval: 'Pending Approval'
+        };
+        return statusLabels[status] || status;
     };
 
     if (isLoading && users.length === 0) {
@@ -307,8 +363,8 @@ const Users = () => {
                                             <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full capitalize">{user.role}</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(user.status)}`}>
-                                                {user.status}
+                                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(user.status)}`}>
+                                                {formatStatus(user.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 text-sm">{new Date(user.createdAt).toLocaleDateString()}</td>
@@ -416,8 +472,9 @@ const Users = () => {
                                 >
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
-                                    <option value="suspended">Suspended</option>
-                                    <option value="pending">Pending</option>
+                                    <option value="blocked">Blocked</option>
+                                    <option value="pending_verification">Pending Verification</option>
+                                    <option value="pending_approval">Pending Approval</option>
                                 </select>
                             </div>
                             <div className="flex gap-3 pt-4">

@@ -33,7 +33,9 @@ const WorkerProfile = () => {
         employeeProfile: {
             skills: [],
             experience: '',
+            serviceCategories: [],
             availability: {
+                isAvailable: true,
                 days: [],
                 hours: { start: '', end: '' }
             },
@@ -59,7 +61,9 @@ const WorkerProfile = () => {
                 employeeProfile: {
                     skills: user.employeeProfile?.skills || [],
                     experience: user.employeeProfile?.experience || '',
+                    serviceCategories: user.employeeProfile?.serviceCategories || [],
                     availability: {
+                        isAvailable: user.employeeProfile?.availability?.isAvailable ?? true,
                         days: user.employeeProfile?.availability?.days || [],
                         hours: user.employeeProfile?.availability?.hours || { start: '', end: '' }
                     },
@@ -143,12 +147,24 @@ const WorkerProfile = () => {
                 address: formData.address
             };
 
-            const [profileResponse] = await Promise.all([
+            // Update both profiles - employee profile response has the complete user data
+            const [profileResponse, employeeProfileResponse] = await Promise.all([
                 userAPI.updateProfile(basicProfile),
                 userAPI.updateEmployeeProfile(formData.employeeProfile)
             ]);
 
-            setUser(profileResponse.data.user);
+            // Use employee profile response as it contains the full updated user
+            // Merge with basic profile response to ensure all data is current
+            const updatedUser = {
+                ...profileResponse.data?.user,
+                ...employeeProfileResponse.data?.user,
+                employeeProfile: employeeProfileResponse.data?.user?.employeeProfile
+            };
+
+            // Update auth store and localStorage
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+
             toast.success('Profile updated successfully!');
         } catch (error) {
             console.error('Error updating profile:', error);
@@ -412,6 +428,72 @@ const WorkerProfile = () => {
                 <div className="bg-white p-6 rounded-lg shadow-sm border">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Professional Information</h2>
                     <div className="space-y-6">
+                        {/* Availability Toggle */}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Available for Work</label>
+                                <p className="text-sm text-gray-500">Toggle off if you're not accepting new bookings</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleAvailabilityChange('isAvailable', !formData.employeeProfile.availability.isAvailable)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    formData.employeeProfile.availability.isAvailable ? 'bg-green-500' : 'bg-gray-300'
+                                }`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                        formData.employeeProfile.availability.isAvailable ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Service Categories */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Service Categories *</label>
+                            <p className="text-sm text-gray-500 mb-3">Select the services you provide (you must select at least one to appear in search)</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {[
+                                    { value: 'plumbing', label: 'Plumbing' },
+                                    { value: 'electrical', label: 'Electrical' },
+                                    { value: 'cleaning', label: 'Cleaning' },
+                                    { value: 'painting', label: 'Painting' },
+                                    { value: 'carpentry', label: 'Carpentry' },
+                                    { value: 'appliance-repair', label: 'Appliance Repair' },
+                                    { value: 'ac-repair', label: 'AC Repair' },
+                                    { value: 'gardening', label: 'Gardening' },
+                                    { value: 'pest-control', label: 'Pest Control' },
+                                    { value: 'other', label: 'Other' }
+                                ].map((category) => (
+                                    <label
+                                        key={category.value}
+                                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                                            formData.employeeProfile.serviceCategories.includes(category.value)
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-gray-300 hover:border-blue-300'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.employeeProfile.serviceCategories.includes(category.value)}
+                                            onChange={(e) => {
+                                                const newCategories = e.target.checked
+                                                    ? [...formData.employeeProfile.serviceCategories, category.value]
+                                                    : formData.employeeProfile.serviceCategories.filter(c => c !== category.value);
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    employeeProfile: { ...prev.employeeProfile, serviceCategories: newCategories }
+                                                }));
+                                            }}
+                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm text-gray-700">{category.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Skills (comma-separated)</label>
                             <input
