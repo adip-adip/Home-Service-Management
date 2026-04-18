@@ -126,7 +126,16 @@ const useAuthStore = create(
         }),
         {
             name: 'auth-storage',
-            partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated })
+            partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+            onRehydrateStorage: () => (state) => {
+                const token = localStorage.getItem('accessToken');
+
+                // Guard against stale persisted auth state when tokens were cleared.
+                if (!token && state?.isAuthenticated) {
+                    state.user = null;
+                    state.isAuthenticated = false;
+                }
+            }
         }
     )
 );
