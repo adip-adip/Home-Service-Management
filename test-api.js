@@ -7,7 +7,7 @@ const API_BASE = 'http://localhost:5000/api/v1';
 
 // Test function
 async function testDocumentAPI() {
-    console.log('🧪 Testing Document API...');
+    console.log(' Testing Document API...');
     
     try {
         // First, try to login with a test employee account
@@ -25,7 +25,7 @@ async function testDocumentAPI() {
         if (loginResponse.ok) {
             const loginData = await loginResponse.json();
             const token = loginData.data.accessToken;
-            console.log('✅ Login successful');
+            console.log(' Login successful');
             
             // Now test the documents endpoint
             const documentsResponse = await fetch(`${API_BASE}/users/documents`, {
@@ -37,24 +37,24 @@ async function testDocumentAPI() {
             
             if (documentsResponse.ok) {
                 const documentsData = await documentsResponse.json();
-                console.log('✅ Documents API working:', documentsData);
+                console.log(' Documents API working:', documentsData);
             } else {
                 const error = await documentsResponse.text();
-                console.log('❌ Documents API failed:', documentsResponse.status, error);
+                console.log(' Documents API failed:', documentsResponse.status, error);
             }
         } else {
             const error = await loginResponse.text();
-            console.log('❌ Login failed:', loginResponse.status, error);
+            console.log(' Login failed:', loginResponse.status, error);
         }
         
     } catch (error) {
-        console.error('❌ Test failed:', error.message);
+        console.error(' Test failed:', error.message);
     }
 }
 
 // Test booking API as well
 async function testBookingAPI() {
-    console.log('🧪 Testing Booking API...');
+    console.log(' Testing Booking API...');
     
     try {
         // Login first
@@ -72,7 +72,7 @@ async function testBookingAPI() {
         if (loginResponse.ok) {
             const loginData = await loginResponse.json();
             const token = loginData.data.accessToken;
-            console.log('✅ Login successful');
+            console.log(' Login successful');
             
             // Test the my-jobs endpoint
             const jobsResponse = await fetch(`${API_BASE}/bookings/my-jobs`, {
@@ -84,15 +84,15 @@ async function testBookingAPI() {
             
             if (jobsResponse.ok) {
                 const jobsData = await jobsResponse.json();
-                console.log('✅ My Jobs API working:', jobsData);
+                console.log(' My Jobs API working:', jobsData);
             } else {
                 const error = await jobsResponse.text();
-                console.log('❌ My Jobs API failed:', jobsResponse.status, error);
+                console.log(' My Jobs API failed:', jobsResponse.status, error);
             }
         }
         
     } catch (error) {
-        console.error('❌ Test failed:', error.message);
+        console.error(' Test failed:', error.message);
     }
 }
 
