@@ -54,10 +54,21 @@ const useAuthStore = create(
                 set({ isLoading: true, error: null });
                 try {
                     const response = await authAPI.register(userData);
+                    console.log('Register response:', response);
                     set({ isLoading: false });
-                    return { success: true, message: response.message };
+                    return {
+                        success: response.success ?? true,
+                        message: response.message || 'Registration successful',
+                        data: {
+                            user: response.data?.user,
+                            emailSent: response.data?.emailSent ?? false,
+                            requiresEmailVerification: response.data?.requiresEmailVerification ?? true
+                        },
+                        errors: response.errors || []
+                    };
                 } catch (error) {
-                    const message = error.response?.data?.message || 'Registration failed';
+                    console.error('Register error:', error.response?.data || error);
+                    const message = error.response?.data?.message || error.message || 'Registration failed';
                     const errors = error.response?.data?.errors || [];
                     set({ error: message, isLoading: false });
                     return { success: false, error: message, errors };
