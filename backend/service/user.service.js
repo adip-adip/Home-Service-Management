@@ -36,7 +36,13 @@ class UserService {
             throw { statusCode: 404, message: ERROR_MESSAGES.USER_NOT_FOUND };
         }
 
-        return user;
+        const userObj = user.toObject();
+        
+        if (user.role !== ROLES.EMPLOYEE) {
+            delete userObj.employeeProfile;
+        }
+
+        return userObj;
     }
 
     /**
@@ -66,7 +72,13 @@ class UserService {
             throw { statusCode: 404, message: ERROR_MESSAGES.USER_NOT_FOUND };
         }
 
-        return user;
+        const userObj = user.toObject();
+        
+        if (user.role !== ROLES.EMPLOYEE) {
+            delete userObj.employeeProfile;
+        }
+
+        return userObj;
     }
 
     /**
@@ -216,6 +228,10 @@ class UserService {
 
         const userResponse = user.toObject();
         delete userResponse.password;
+        
+        if (user.role !== ROLES.EMPLOYEE) {
+            delete userResponse.employeeProfile;
+        }
 
         return userResponse;
     }
@@ -273,6 +289,10 @@ class UserService {
 
         const userResponse = user.toObject();
         delete userResponse.password;
+        
+        if (user.role !== ROLES.EMPLOYEE) {
+            delete userResponse.employeeProfile;
+        }
 
         return userResponse;
     }
