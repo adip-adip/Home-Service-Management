@@ -66,7 +66,7 @@ const registerLocationEvents = (socket, io) => {
                 lastLocation: null
             });
 
-            console.log(`📍 Employee ${userId} started tracking for booking ${bookingId}`);
+            console.log(` Employee ${userId} started tracking for booking ${bookingId}`);
 
             socket.emit('location:trackingStarted', {
                 bookingId,
@@ -94,7 +94,7 @@ const registerLocationEvents = (socket, io) => {
         try {
             const { bookingId, latitude, longitude, heading, speed, accuracy } = data;
 
-            console.log(`📍 Location update received from employee ${userId} for booking ${bookingId}`);
+            console.log(` Location update received from employee ${userId} for booking ${bookingId}`);
 
             if (!bookingId || latitude === undefined || longitude === undefined) {
                 return socket.emit('location:error', { message: 'Invalid location data' });
@@ -103,7 +103,7 @@ const registerLocationEvents = (socket, io) => {
             // Verify this is the tracking employee
             const session = activeTrackingSessions.get(bookingId);
             if (!session) {
-                console.log(`📍 No active session found for booking ${bookingId}, creating new session...`);
+                console.log(` No active session found for booking ${bookingId}, creating new session...`);
                 // Try to create session if employee is authorized
                 const booking = await Booking.findById(bookingId)
                     .select('employee customer status')
@@ -119,7 +119,7 @@ const registerLocationEvents = (socket, io) => {
                     });
 
                     // Notify customer that employee started sharing location
-                    console.log(`📍 Auto-created session, notifying customer ${booking.customer.toString()}`);
+                    console.log(` Auto-created session, notifying customer ${booking.customer.toString()}`);
                     io.to(`user:${booking.customer.toString()}`).emit('location:employeeOnline', {
                         bookingId,
                         message: 'Service provider is now sharing their location'
@@ -147,7 +147,7 @@ const registerLocationEvents = (socket, io) => {
             currentSession.lastLocation = locationData;
             activeTrackingSessions.set(bookingId, currentSession);
 
-            console.log(`📍 Broadcasting location to customer ${currentSession.customerId}`);
+            console.log(`Broadcasting location to customer ${currentSession.customerId}`);
 
             // Broadcast location to the customer only
             io.to(`user:${currentSession.customerId}`).emit('location:employeeLocation', {
@@ -183,7 +183,7 @@ const registerLocationEvents = (socket, io) => {
         try {
             const { bookingId } = data;
 
-            console.log(`📍 Customer ${userId} trying to subscribe to booking ${bookingId}`);
+            console.log(`Customer ${userId} trying to subscribe to booking ${bookingId}`);
 
             if (!bookingId) {
                 return socket.emit('location:error', { message: 'Booking ID required' });
@@ -209,7 +209,7 @@ const registerLocationEvents = (socket, io) => {
             // Check if employee is currently tracking
             const session = activeTrackingSessions.get(bookingId);
 
-            console.log(`📍 Customer ${userId} subscribed. Employee online: ${!!session}, Session:`, session ? { employeeId: session.employeeId, hasLocation: !!session.lastLocation } : null);
+            console.log(`Customer ${userId} subscribed. Employee online: ${!!session}, Session:`, session ? { employeeId: session.employeeId, hasLocation: !!session.lastLocation } : null);
 
             socket.emit('location:subscribed', {
                 bookingId,
@@ -217,7 +217,7 @@ const registerLocationEvents = (socket, io) => {
                 lastKnownLocation: session?.lastLocation || booking.employeeLastLocation || null
             });
 
-            console.log(`📍 Customer ${userId} subscribed to location for booking ${bookingId}`);
+            console.log(` Customer ${userId} subscribed to location for booking ${bookingId}`);
 
         } catch (error) {
             console.error('Error subscribing to location:', error);
@@ -249,7 +249,7 @@ const registerLocationEvents = (socket, io) => {
             // Remove session
             activeTrackingSessions.delete(bookingId);
 
-            console.log(`📍 Tracking stopped for booking ${bookingId}`);
+            console.log(` Tracking stopped for booking ${bookingId}`);
 
             // Notify customer
             io.to(`user:${session.customerId}`).emit('location:employeeOffline', {
@@ -279,7 +279,7 @@ const registerLocationEvents = (socket, io) => {
                     message: 'Service provider disconnected'
                 });
 
-                console.log(`📍 Tracking auto-stopped for booking ${bookingId} (employee disconnected)`);
+                console.log(` Tracking auto-stopped for booking ${bookingId} (employee disconnected)`);
             }
         }
     });

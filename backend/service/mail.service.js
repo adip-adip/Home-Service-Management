@@ -23,15 +23,34 @@ class MailService {
                 auth: {
                     user: process.env.SMTP_USER,
                     pass: process.env.SMTP_PASSWORD
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                    minVersion: 'TLSv1.2'
+                },
+                connectionTimeout: 10000,
+                socketTimeout: 10000,
+                pool: {
+                    maxConnections: 5,
+                    maxMessages: 100,
+                    rateDelta: 1000,
+                    rateLimit: 10
                 }
             };
 
+            console.log('Mail service config:', {
+                host: config.host,
+                port: config.port,
+                secure: config.secure,
+                user: config.auth.user
+            });
+
             this.transporter = nodemailer.createTransport(config);
             this.initialized = true;
-            console.log(' Mail service initialized successfully');
+            console.log('✓ Mail service initialized successfully');
         } catch (error) {
-            console.error(' Mail service initialization failed:', error.message);
-            throw error;
+            console.error('✗ Mail service initialization failed:', error.message);
+            this.initialized = false;
         }
     }
 
@@ -71,14 +90,42 @@ class MailService {
             html: options.html
         };
 
-        try {
-            const info = await this.transporter.sendMail(mailOptions);
-            console.log(` Email sent: ${info.messageId}`);
-            return { success: true, messageId: info.messageId };
-        } catch (error) {
-            console.error(' Email sending failed:', error.message);
-            return { success: false, error: error.message };
+        // Retry logic for transient failures
+        let lastError;
+        const maxRetries = 3;
+        const retryDelays = [1000, 2000, 3000]; // milliseconds
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const info = await this.transporter.sendMail(mailOptions);
+                console.log(`✓ Email sent successfully: ${info.messageId} to ${options.to}`);
+                return { success: true, messageId: info.messageId };
+            } catch (error) {
+                lastError = error;
+                console.warn(`⚠ Email send attempt ${attempt + 1} failed:`, {
+                    message: error.message,
+                    code: error.code,
+                    to: options.to
+                });
+
+                // If it's the last attempt, don't wait
+                if (attempt < maxRetries - 1) {
+                    // Wait before retrying
+                    await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+                }
+            }
         }
+
+        // All retries failed
+        console.error('✗ Email sending failed after retries:', {
+            message: lastError.message,
+            code: lastError.code,
+            to: options.to,
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            timestamp: new Date().toISOString()
+        });
+        return { success: false, error: lastError.message };
     }
 
     /**
