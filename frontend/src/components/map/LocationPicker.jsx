@@ -193,6 +193,11 @@ const LocationPicker = ({
             if (data.display_name) {
                 setSelectedAddress(data.display_name);
                 setSearchQuery(data.display_name);
+                setError('');
+                // Pass address to parent component
+                if (onChange) {
+                    onChange(data.display_name);
+                }
             }
         } catch (err) {
             console.error('Reverse geocoding failed:', err);
@@ -338,7 +343,11 @@ const LocationPicker = ({
                 const approximateAddress = addressParts.join(', ') || 'Approximate location';
                 setSelectedAddress(approximateAddress);
                 setSearchQuery(approximateAddress);
-                setError('Using approximate location. Drag the marker to adjust.');
+                setError('');
+                // Pass address to parent component
+                if (onChange) {
+                    onChange(approximateAddress);
+                }
                 setIsLocating(false);
                 return true;
             }

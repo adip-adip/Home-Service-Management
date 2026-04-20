@@ -137,18 +137,62 @@ const CreateBooking = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('handleSubmit clicked', { formData });
         
-        if (!formData.serviceCategory || !formData.scheduledDate || !formData.scheduledTime || !formData.address) {
-            toast.error('Please fill in all required fields');
+        // Get values properly (handle both empty string and null/undefined)
+        const serviceCategory = formData.serviceCategory?.trim() || '';
+        const employee = formData.employee?.trim() || '';
+        const scheduledDate = formData.scheduledDate?.trim() || '';
+        const scheduledTime = formData.scheduledTime?.trim() || '';
+        const address = formData.address?.trim() || '';
+        
+        console.log('Parsed values:', { serviceCategory, employee, scheduledDate, scheduledTime, address });
+        
+        // Validate each field and show specific error
+        if (!serviceCategory) {
+            console.log('No service category');
+            toast.error('Please select a service category');
+            return;
+        }
+        if (!employee) {
+            console.log('No employee');
+            toast.error('Please select a service provider');
+            return;
+        }
+        if (!scheduledDate) {
+            console.log('No date');
+            toast.error('Please select a booking date');
+            return;
+        }
+        if (!scheduledTime) {
+            console.log('No time');
+            toast.error('Please select a time slot');
+            return;
+        }
+        if (!address) {
+            console.log('No address');
+            toast.error('Please enter a service address');
             return;
         }
 
         try {
             setLoading(true);
-            await bookingAPI.createBooking(formData);
+            const bookingPayload = {
+                employeeId: employee,
+                serviceCategory: serviceCategory,
+                scheduledDate: scheduledDate,
+                scheduledTime: scheduledTime,
+                address: address,
+                addressCoordinates: formData.addressCoordinates || null,
+                description: formData.description?.trim() || '',
+                customerPhone: formData.customerPhone?.trim() || ''
+            };
+            console.log('Creating booking with:', bookingPayload);
+            await bookingAPI.createBooking(bookingPayload);
             toast.success('Booking created successfully!');
             navigate('/dashboard/bookings');
         } catch (error) {
+            console.error('Booking error:', error.response?.data);
             toast.error(error.response?.data?.message || 'Failed to create booking');
         } finally {
             setLoading(false);
