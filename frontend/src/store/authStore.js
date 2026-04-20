@@ -27,6 +27,14 @@ const useAuthStore = create(
                 set({ isLoading: true, error: null });
                 try {
                     const response = await authAPI.login(credentials);
+                    
+                    // Check if login succeeded
+                    if (!response.success) {
+                        const message = response.message || 'Login failed';
+                        set({ error: message, isLoading: false });
+                        return { success: false, error: message };
+                    }
+                    
                     const { user, accessToken, refreshToken } = response.data;
                     
                     // Store tokens in localStorage
@@ -43,7 +51,7 @@ const useAuthStore = create(
                     return { success: true, user };
                 } catch (error) {
                     console.error('Login error:', error);
-                    const message = error.response?.data?.message || 'Login failed';
+                    const message = error.response?.data?.message || error.message || 'Login failed';
                     set({ error: message, isLoading: false });
                     return { success: false, error: message };
                 }

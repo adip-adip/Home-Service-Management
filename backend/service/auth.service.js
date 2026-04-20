@@ -372,6 +372,11 @@ class AuthService {
         user.passwordResetToken = undefined;
         user.passwordResetExpires = undefined;
         user.passwordChangedAt = Date.now();
+        
+        // Reset login attempts and unlock account after password reset
+        user.loginAttempts = 0;
+        user.lockUntil = undefined;
+        
         await user.save();
 
         // Revoke all existing refresh tokens for security

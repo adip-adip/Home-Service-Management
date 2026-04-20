@@ -55,9 +55,7 @@ const handleSubmit = async (e) => {
         if (!validate()) return;
 
         try {
-            console.log('Starting login...');
             const result = await login(formData);
-            console.log('Login result in component:', result);
 
             if (result.success) {
                 toast.success('Welcome back!');
@@ -66,14 +64,9 @@ const handleSubmit = async (e) => {
                     navigate(from, { replace: true });
                 }, 1000);
             } else {
-                console.log('Login failed - showing alert:', result.error);
-                // Use both alert and toast to debug
-                alert('Error: ' + (result.error || 'Invalid credentials'));
                 toast.error(result.error || 'Invalid email or password');
             }
         } catch (error) {
-            console.error('Exception in handleSubmit:', error);
-            alert('Exception: ' + error.message);
             toast.error(error.message || 'Login failed. Please try again.');
         }
     };
@@ -274,28 +267,6 @@ const handleSubmit = async (e) => {
                             Create account
                         </Link>
                     </p>
-
-                    {/* Demo Credentials */}
-                    <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                        <p className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-                            Demo Accounts
-                        </p>
-                        <div className="space-y-2 text-sm text-slate-600">
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Admin:</span>
-                                <code className="text-xs bg-slate-200/70 px-2 py-0.5 rounded">admin@homeservice.com</code>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Employee:</span>
-                                <code className="text-xs bg-slate-200/70 px-2 py-0.5 rounded">ram.plumber@example.com</code>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Password:</span>
-                                <code className="text-xs bg-slate-200/70 px-2 py-0.5 rounded">Admin@123456</code>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
