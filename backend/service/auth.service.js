@@ -75,6 +75,10 @@ class AuthService {
         delete userResponse.password;
         delete userResponse.emailVerificationToken;
         delete userResponse.emailVerificationExpires;
+        
+        if (user.role !== ROLES.EMPLOYEE) {
+            delete userResponse.employeeProfile;
+        }
 
         return {
             user: userResponse,
@@ -159,6 +163,10 @@ class AuthService {
         // Prepare user response
         const userResponse = user.toObject();
         delete userResponse.password;
+        
+        if (user.role !== ROLES.EMPLOYEE) {
+            delete userResponse.employeeProfile;
+        }
 
         return {
             user: userResponse,
