@@ -55,8 +55,20 @@ class AuthService {
         // Create user
         const user = await User.create(newUserData);
 
-        // Send verification email
-        await mailService.sendVerificationEmail(user.email, user.firstName, verificationToken);
+        // Send verification email asynchronously (don't wait for it to block registration)
+        let emailSent = false;
+        mailService.sendVerificationEmail(user.email, user.firstName, verificationToken)
+            .then(result => {
+                emailSent = result.success;
+                if (result.success) {
+                    console.log('✓ Verification email sent successfully');
+                } else {
+                    console.warn('⚠ Verification email failed, but registration continues');
+                }
+            })
+            .catch(error => {
+                console.error('Email sending error:', error.message);
+            });
 
         // Return user without sensitive data
         const userResponse = user.toObject();
@@ -66,7 +78,9 @@ class AuthService {
 
         return {
             user: userResponse,
-            message: 'Registration successful. Please check your email to verify your account.'
+            message: 'Registration successful. Please check your email to verify your account.',
+            emailSent: emailSent,
+            requiresEmailVerification: true
         };
     }
 
@@ -250,11 +264,13 @@ class AuthService {
         user.emailVerificationExpires = undefined;
         await user.save();
 
-        // Send welcome email
-        await mailService.sendWelcomeEmail(user.email, user.firstName, user.role);
+        // Send welcome email asynchronously
+        mailService.sendWelcomeEmail(user.email, user.firstName, user.role).catch(error => {
+            console.error('Welcome email sending failed:', error.message);
+        });
 
         return {
-            message: user.role === ROLES.EMPLOYEE 
+            message: user.role === ROLES.EMPLOYEE
                 ? 'Email verified successfully. Your account is pending admin approval.'
                 : 'Email verified successfully. You can now login.',
             user: {
@@ -288,8 +304,10 @@ class AuthService {
         user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await user.save();
 
-        // Send verification email
-        await mailService.sendVerificationEmail(user.email, user.firstName, verificationToken);
+        // Send verification email asynchronously
+        mailService.sendVerificationEmail(user.email, user.firstName, verificationToken).catch(error => {
+            console.error('Verification email sending failed:', error.message);
+        });
 
         return { message: 'Verification email sent successfully' };
     }
@@ -312,8 +330,10 @@ class AuthService {
         user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
         await user.save();
 
-        // Send reset email
-        await mailService.sendPasswordResetEmail(user.email, user.firstName, resetToken);
+        // Send reset email asynchronously
+        mailService.sendPasswordResetEmail(user.email, user.firstName, resetToken).catch(error => {
+            console.error('Password reset email sending failed:', error.message);
+        });
 
         return { message: 'Password reset email sent successfully' };
     }

@@ -14,11 +14,15 @@ class AuthController {
     async register(req, res, next) {
         try {
             const result = await authService.register(req.body);
-            
+
             res.status(HTTP_STATUS.CREATED).json({
                 success: true,
                 message: result.message,
-                data: { user: result.user }
+                data: {
+                    user: result.user,
+                    emailSent: result.emailSent,
+                    requiresEmailVerification: result.requiresEmailVerification
+                }
             });
         } catch (error) {
             next(error);

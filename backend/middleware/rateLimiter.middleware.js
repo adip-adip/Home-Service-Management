@@ -102,11 +102,11 @@ const uploadLimiter = createRateLimiter({
 
 /**
  * Create account rate limiter (IP-based)
- * 5 accounts per day from same IP
+ * 5 accounts per day from same IP (production) / 500 per day (development)
  */
 const createAccountLimiter = createRateLimiter({
     windowMs: 24 * 60 * 60 * 1000, // 24 hours
-    max: 5,
+    max: process.env.NODE_ENV === 'production' ? 5 : 500,
     message: {
         success: false,
         message: 'Too many accounts created from this IP',
