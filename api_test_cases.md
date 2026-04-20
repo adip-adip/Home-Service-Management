@@ -1,4 +1,3 @@
-
 # Home Service Provider API Test Cases
 
 This document outlines the test cases for the Home Service Provider API. All endpoints are prefixed with `http://localhost:5000/api/v1`.

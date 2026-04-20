@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FiSearch, FiEdit2, FiTrash2, FiUser, FiX, FiSave } from 'react-icons/fi';
+import { FiSearch, FiEdit2, FiTrash2, FiUser, FiX, FiSave, FiFile } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../api';
 import { useAuthStore } from '../../store';
@@ -20,6 +20,10 @@ const Users = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [employeeDocuments, setEmployeeDocuments] = useState([]);
+    const [showDocumentsModal, setShowDocumentsModal] = useState(false);
+    const [documentsLoading, setDocumentsLoading] = useState(false);
     const limit = 10;
     
     // Track the current page type to detect changes
@@ -225,6 +229,25 @@ const Users = () => {
             isFetching.current = false;
             fetchUsers(currentPage, searchQuery);
         }
+};
+
+    const fetchEmployeeDocuments = async (employeeId) => {
+        try {
+            setDocumentsLoading(true);
+            const response = await adminAPI.getEmployeeDocuments(employeeId);
+            setEmployeeDocuments(response.data.documents || []);
+        } catch (error) {
+            console.error('Error fetching employee documents:', error);
+            setEmployeeDocuments([]);
+        } finally {
+            setDocumentsLoading(false);
+        }
+    };
+
+    const handleViewDocuments = async (user) => {
+        setSelectedEmployee(user);
+        await fetchEmployeeDocuments(user._id);
+        setShowDocumentsModal(true);
     };
 
     const getStatusBadgeClass = (status) => {
@@ -370,6 +393,15 @@ const Users = () => {
                                         <td className="px-6 py-4 text-gray-600 text-sm">{new Date(user.createdAt).toLocaleDateString()}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
+                                                {isEmployeePage && (
+                                                    <button 
+                                                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors" 
+                                                        title="View Documents"
+                                                        onClick={() => handleViewDocuments(user)}
+                                                    >
+                                                        <FiFile className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 <button 
                                                     className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors" 
                                                     title="Edit"
@@ -493,6 +525,71 @@ const Users = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Documents Modal */}
+            {showDocumentsModal && selectedEmployee && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDocumentsModal(false)}>
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Documents - {selectedEmployee.firstName} {selectedEmployee.lastName}
+                            </h3>
+                            <button 
+                                onClick={() => setShowDocumentsModal(false)}
+                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                            >
+                                <FiX className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto max-h-[60vh]">
+                            {documentsLoading ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            ) : employeeDocuments.length === 0 ? (
+                                <p className="text-center text-gray-500 py-8">No documents uploaded</p>
+                            ) : (
+                                <div className="space-y-4">
+                                    {employeeDocuments.map((doc) => (
+                                        <div key={doc._id} className="border border-gray-200 rounded-lg p-4">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <h4 className="font-medium text-gray-800 capitalize">
+                                                    {(doc.docType || doc.type || '').replace('_', ' ')}
+                                                </h4>
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full uppercase ${
+                                                    doc.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    doc.status === 'verified' ? 'bg-green-100 text-green-800' :
+                                                    doc.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {doc.status}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm text-gray-500 space-y-1 mb-3">
+                                                <p>Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                                {doc.verifiedAt && (
+                                                    <p>Reviewed: {new Date(doc.verifiedAt).toLocaleDateString()}</p>
+                                                )}
+                                                {doc.rejectionReason && (
+                                                    <p className="text-red-600">Reason: {doc.rejectionReason}</p>
+                                                )}
+                                            </div>
+                                            <a 
+                                                href={doc.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                            >
+                                                View Document
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
