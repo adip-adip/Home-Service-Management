@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { FiMenu, FiHome, FiSearch, FiHelpCircle } from 'react-icons/fi';
+import { FiMenu, FiHome, FiHelpCircle } from 'react-icons/fi';
 import Sidebar from './Sidebar';
 import { NotificationBell } from '../notifications';
 import { useAuthStore } from '../../store';
@@ -40,18 +40,6 @@ const DashboardLayout = () => {
                                 <FiHome className="w-4 h-4" />
                                 <span>Home</span>
                             </Link>
-
-                            {/* Search (Desktop) */}
-                            <div className="hidden md:flex items-center">
-                                <div className="relative">
-                                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search..."
-                                        className="w-64 pl-10 pr-4 py-2 bg-slate-100 border border-transparent rounded-xl text-sm placeholder-slate-400 focus:bg-white focus:border-brand-300 focus:ring-2 focus:ring-brand-100 focus:outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
                         </div>
 
                         {/* Right side */}

@@ -9,6 +9,64 @@ import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiPhone, FiHome, FiArrowRight,
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store';
 
+const InputField = ({ label, name, type = 'text', placeholder, icon: Icon, optional = false, formData, showPassword, setShowPassword, errors, focusedField, setFocusedField, handleChange }) => (
+    <div>
+        <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-slate-700">
+                {label}
+            </label>
+            <div className="flex items-center gap-2">
+                {!optional && <span className="text-red-500 text-sm font-medium">*</span>}
+                {errors[name] && (
+                    <span className="text-red-500 text-xs font-semibold">Invalid</span>
+                )}
+            </div>
+        </div>
+        <div className="relative">
+            <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
+                errors[name]
+                    ? 'text-red-500'
+                    : focusedField === name ? 'text-brand-500' : 'text-slate-400'
+            }`}>
+                <Icon className="w-[18px] h-[18px]" />
+            </div>
+            <input
+                type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
+                name={name}
+                placeholder={placeholder}
+                value={formData[name]}
+                onChange={handleChange}
+                onFocus={() => setFocusedField(name)}
+                onBlur={() => setFocusedField(null)}
+                className={`w-full pl-11 ${type === 'password' ? 'pr-12' : 'pr-4'} py-3 rounded-xl border-2 bg-slate-50 transition-all duration-200 text-slate-900 placeholder:text-slate-400 ${
+                    errors[name]
+                        ? 'border-red-300 focus:border-red-500 focus:bg-red-50'
+                        : 'border-slate-200 focus:border-brand-500 focus:bg-white'
+                } focus:outline-none focus:ring-4 ${
+                    errors[name] ? 'focus:ring-red-500/10' : 'focus:ring-brand-500/10'
+                }`}
+            />
+            {type === 'password' && (
+                <button
+                    type="button"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                    onClick={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? <FiEyeOff className="w-[18px] h-[18px]" /> : <FiEye className="w-[18px] h-[18px]" />}
+                </button>
+            )}
+        </div>
+        {errors[name] && (
+            <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                <p className="text-red-700 text-xs font-medium flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">⚠</span>
+                    <span>{errors[name]}</span>
+                </p>
+            </div>
+        )}
+    </div>
+);
+
 const Register = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -28,6 +86,7 @@ const Register = () => {
         experience: 0
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [focusedField, setFocusedField] = useState(null);
 
@@ -112,70 +171,61 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validate()) return;
+        if (!validate()) {
+            toast.error('Please fix the validation errors above');
+            return;
+        }
 
-        const result = await register(formData);
-
-        if (result.success) {
-            toast.success('Account created! Please check your email to verify.');
-            navigate('/login');
-        } else {
-            if (result.errors && result.errors.length > 0) {
-                const backendErrors = {};
-                result.errors.forEach(err => {
-                    backendErrors[err.field] = err.message;
-                });
-                setErrors(backendErrors);
-                toast.error('Please fix the errors below');
-            } else {
-                toast.error(result.error);
+        try {
+            // Prepare data to send - exclude employee-specific fields for customers
+            const dataToSend = { ...formData };
+            if (formData.role === 'customer') {
+                delete dataToSend.serviceCategories;
+                delete dataToSend.experience;
             }
+
+            const result = await register(dataToSend);
+
+            if (result.success) {
+                const emailStatus = result.data?.emailSent
+                    ? '✓'
+                    : '⚠';
+                const emailMessage = result.data?.emailSent
+                    ? 'Please check your email to verify your account.'
+                    : 'Verification email could not be sent. You can resend it from your dashboard.';
+
+                toast.success(`Account created successfully! ${emailStatus}\n${emailMessage}`, {
+                    duration: 5000,
+                    style: { whiteSpace: 'pre-line' }
+                });
+                setTimeout(() => navigate('/login'), 3000);
+            } else {
+                if (result.errors && result.errors.length > 0) {
+                    const backendErrors = {};
+                    const errorMessages = [];
+                    result.errors.forEach(err => {
+                        backendErrors[err.field] = err.message;
+                        errorMessages.push(`• ${err.message}`);
+                    });
+                    setErrors(backendErrors);
+
+                    const errorSummary = `Registration failed:\n${errorMessages.join('\n')}`;
+                    toast.error(errorSummary, {
+                        duration: 5000,
+                        style: {
+                            whiteSpace: 'pre-line'
+                        }
+                    });
+                } else {
+                    toast.error(`Registration failed: ${result.error || 'Unknown error'}`, { duration: 5000 });
+                }
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            toast.error(`An error occurred: ${error.message || 'Registration failed'}`, { duration: 5000 });
         }
     };
 
-    const InputField = ({ label, name, type = 'text', placeholder, icon: Icon, optional = false }) => (
-        <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-                {label} {optional && <span className="text-slate-400 font-normal">(Optional)</span>}
-            </label>
-            <div className="relative">
-                <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
-                    focusedField === name ? 'text-brand-500' : 'text-slate-400'
-                }`}>
-                    <Icon className="w-[18px] h-[18px]" />
-                </div>
-                <input
-                    type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
-                    name={name}
-                    placeholder={placeholder}
-                    value={formData[name]}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField(name)}
-                    onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-11 ${type === 'password' ? 'pr-12' : 'pr-4'} py-3 rounded-xl border-2 bg-slate-50 transition-all duration-200 text-slate-900 placeholder:text-slate-400 ${
-                        errors[name]
-                            ? 'border-red-300 focus:border-red-500 focus:bg-white'
-                            : 'border-slate-200 focus:border-brand-500 focus:bg-white'
-                    } focus:outline-none focus:ring-4 focus:ring-brand-500/10`}
-                />
-                {type === 'password' && (
-                    <button
-                        type="button"
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
-                        onClick={() => setShowPassword(!showPassword)}
-                    >
-                        {showPassword ? <FiEyeOff className="w-[18px] h-[18px]" /> : <FiEye className="w-[18px] h-[18px]" />}
-                    </button>
-                )}
-            </div>
-            {errors[name] && (
-                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                    <span className="w-1 h-1 bg-red-500 rounded-full" />
-                    {errors[name]}
-                </p>
-            )}
-        </div>
-    );
 
     return (
         <div className="min-h-screen flex">
@@ -333,20 +383,24 @@ const Register = () => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Name Fields */}
                         <div className="grid grid-cols-2 gap-4">
-                            <InputField label="First Name" name="firstName" placeholder="Hari" icon={FiUser} />
-                            <InputField label="Last Name" name="lastName" placeholder="Sharma" icon={FiUser} />
+                            <InputField label="First Name" name="firstName" placeholder="Hari" icon={FiUser} formData={formData} showPassword={showPassword} setShowPassword={setShowPassword} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} handleChange={handleChange} />
+                            <InputField label="Last Name" name="lastName" placeholder="Sharma" icon={FiUser} formData={formData} showPassword={showPassword} setShowPassword={setShowPassword} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} handleChange={handleChange} />
                         </div>
 
-                        <InputField label="Email" name="email" type="email" placeholder="hari@example.com" icon={FiMail} />
-                        <InputField label="Phone" name="phone" type="tel" placeholder="9841234567" icon={FiPhone} optional />
+                        <InputField label="Email" name="email" type="email" placeholder="hari@example.com" icon={FiMail} formData={formData} showPassword={showPassword} setShowPassword={setShowPassword} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} handleChange={handleChange} />
+                        <InputField label="Phone" name="phone" type="tel" placeholder="9841234567" icon={FiPhone} optional formData={formData} showPassword={showPassword} setShowPassword={setShowPassword} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} handleChange={handleChange} />
 
                         {/* Employee Specific Fields */}
                         {formData.role === 'employee' && (
                             <>
                                 {/* Service Category */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                                    <label className="block text-sm font-medium text-slate-700 mb-3 flex items-center gap-1">
                                         Your service specialty
+                                        <span className="text-red-500 text-sm font-medium">*</span>
+                                        {errors.serviceCategories && (
+                                            <span className="ml-auto text-red-500 text-xs font-semibold">Invalid</span>
+                                        )}
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         {serviceOptions.slice(0, 6).map(option => (
@@ -391,10 +445,12 @@ const Register = () => {
                                         ))}
                                     </select>
                                     {errors.serviceCategories && (
-                                        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                                            <span className="w-1 h-1 bg-red-500 rounded-full" />
-                                            {errors.serviceCategories}
-                                        </p>
+                                        <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                                            <p className="text-red-700 text-xs font-medium flex items-start gap-2">
+                                                <span className="text-red-500 mt-0.5">⚠</span>
+                                                <span>{errors.serviceCategories}</span>
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
 
@@ -417,38 +473,59 @@ const Register = () => {
                         )}
 
                         {/* Password Fields */}
-                        <InputField label="Password" name="password" type="password" placeholder="Min 8 characters" icon={FiLock} />
+                        <InputField label="Password" name="password" type="password" placeholder="Min 8 characters" icon={FiLock} formData={formData} showPassword={showPassword} setShowPassword={setShowPassword} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} handleChange={handleChange} />
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Confirm password
-                            </label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-medium text-slate-700">
+                                    Confirm password
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-red-500 text-sm font-medium">*</span>
+                                    {errors.confirmPassword && (
+                                        <span className="text-red-500 text-xs font-semibold">Invalid</span>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
-                                    focusedField === 'confirmPassword' ? 'text-brand-500' : 'text-slate-400'
+                                    errors.confirmPassword
+                                        ? 'text-red-500'
+                                        : focusedField === 'confirmPassword' ? 'text-brand-500' : 'text-slate-400'
                                 }`}>
                                     <FiLock className="w-[18px] h-[18px]" />
                                 </div>
                                 <input
-                                    type="password"
+                                    type={showConfirmPassword ? 'text' : 'password'}
                                     name="confirmPassword"
                                     placeholder="Repeat your password"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
                                     onFocus={() => setFocusedField('confirmPassword')}
                                     onBlur={() => setFocusedField(null)}
-                                    className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 bg-slate-50 transition-all duration-200 text-slate-900 placeholder:text-slate-400 ${
+                                    className={`w-full pl-11 pr-12 py-3 rounded-xl border-2 bg-slate-50 transition-all duration-200 text-slate-900 placeholder:text-slate-400 ${
                                         errors.confirmPassword
-                                            ? 'border-red-300 focus:border-red-500 focus:bg-white'
+                                            ? 'border-red-300 focus:border-red-500 focus:bg-red-50'
                                             : 'border-slate-200 focus:border-brand-500 focus:bg-white'
-                                    } focus:outline-none focus:ring-4 focus:ring-brand-500/10`}
+                                    } focus:outline-none focus:ring-4 ${
+                                        errors.confirmPassword ? 'focus:ring-red-500/10' : 'focus:ring-brand-500/10'
+                                    }`}
                                 />
+                                <button
+                                    type="button"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                >
+                                    {showConfirmPassword ? <FiEyeOff className="w-[18px] h-[18px]" /> : <FiEye className="w-[18px] h-[18px]" />}
+                                </button>
                             </div>
                             {errors.confirmPassword && (
-                                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                                    <span className="w-1 h-1 bg-red-500 rounded-full" />
-                                    {errors.confirmPassword}
-                                </p>
+                                <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                                    <p className="text-red-700 text-xs font-medium flex items-start gap-2">
+                                        <span className="text-red-500 mt-0.5">⚠</span>
+                                        <span>{errors.confirmPassword}</span>
+                                    </p>
+                                </div>
                             )}
                         </div>
 
