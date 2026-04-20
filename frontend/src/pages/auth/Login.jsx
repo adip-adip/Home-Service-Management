@@ -49,18 +49,32 @@ const Login = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validate()) return;
 
-        const result = await login(formData);
+        try {
+            console.log('Starting login...');
+            const result = await login(formData);
+            console.log('Login result in component:', result);
 
-        if (result.success) {
-            toast.success('Welcome back!');
-            navigate(from, { replace: true });
-        } else {
-            toast.error(result.error);
+            if (result.success) {
+                toast.success('Welcome back!');
+                // Delay to show toast before redirecting
+                setTimeout(() => {
+                    navigate(from, { replace: true });
+                }, 1000);
+            } else {
+                console.log('Login failed - showing alert:', result.error);
+                // Use both alert and toast to debug
+                alert('Error: ' + (result.error || 'Invalid credentials'));
+                toast.error(result.error || 'Invalid email or password');
+            }
+        } catch (error) {
+            console.error('Exception in handleSubmit:', error);
+            alert('Exception: ' + error.message);
+            toast.error(error.message || 'Login failed. Please try again.');
         }
     };
 

@@ -55,11 +55,11 @@ class AuthService {
         // Create user
         const user = await User.create(newUserData);
 
-        // Send verification email asynchronously (don't wait for it to block registration)
-        let emailSent = false;
-        mailService.sendVerificationEmail(user.email, user.firstName, verificationToken)
+        // Send verification email - track if it was initiated
+        let emailInitiated = false;
+        const emailPromise = mailService.sendVerificationEmail(user.email, user.firstName, verificationToken)
             .then(result => {
-                emailSent = result.success;
+                emailInitiated = result.success;
                 if (result.success) {
                     console.log('✓ Verification email sent successfully');
                 } else {
@@ -68,6 +68,7 @@ class AuthService {
             })
             .catch(error => {
                 console.error('Email sending error:', error.message);
+                emailInitiated = false;
             });
 
         // Return user without sensitive data
@@ -80,10 +81,13 @@ class AuthService {
             delete userResponse.employeeProfile;
         }
 
+        // Wait for email to be initiated before returning
+        await emailPromise;
+
         return {
             user: userResponse,
             message: 'Registration successful. Please check your email to verify your account.',
-            emailSent: emailSent,
+            emailSent: emailInitiated,
             requiresEmailVerification: true
         };
     }
