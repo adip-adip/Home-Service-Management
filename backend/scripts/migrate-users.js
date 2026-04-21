@@ -10,13 +10,13 @@ const { ROLES, ROLE_PERMISSIONS, USER_STATUS } = require('../config/constant.con
 
 async function migrateLegacyUsers() {
     try {
-        console.log('🔄 Starting legacy user migration...\n');
+        console.log('[MIGRATE] Starting legacy user migration...\n');
 
         const mongoURL = process.env.MONGODB_URL;
         const dbName = process.env.MONGODB_NAME;
 
         await mongoose.connect(mongoURL, { dbName });
-        console.log('✅ Connected to MongoDB\n');
+        console.log('[OK] Connected to MongoDB\n');
 
         // Find users with role 'user' or null/undefined role
         const legacyUsers = await User.find({
@@ -42,7 +42,7 @@ async function migrateLegacyUsers() {
             });
         }
 
-        console.log('\n✅ Legacy users migrated to customer role\n');
+        console.log('\n[OK] Legacy users migrated to customer role\n');
 
         // Fix users missing firstName/lastName
         const usersWithoutNames = await User.find({
@@ -68,17 +68,17 @@ async function migrateLegacyUsers() {
         }
 
         // Summary
-        console.log('\n📊 Migration Summary:');
+        console.log('\n[INFO] Migration Summary:');
         const roleDistribution = await User.aggregate([
             { $group: { _id: '$role', count: { $sum: 1 } } }
         ]);
         console.log('Role distribution:', roleDistribution);
 
         await mongoose.disconnect();
-        console.log('\n✅ Migration completed successfully!');
+        console.log('\n[OK] Migration completed successfully!');
 
     } catch (error) {
-        console.error('❌ Migration failed:', error);
+        console.error('[ERROR] Migration failed:', error);
         process.exit(1);
     }
 }

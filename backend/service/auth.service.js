@@ -61,9 +61,9 @@ class AuthService {
             .then(result => {
                 emailInitiated = result.success;
                 if (result.success) {
-                    console.log('✓ Verification email sent successfully');
+                    console.log('[OK] Verification email sent successfully');
                 } else {
-                    console.warn('⚠ Verification email failed, but registration continues');
+                    console.warn('[WARN] Verification email failed, but registration continues');
                 }
             })
             .catch(error => {

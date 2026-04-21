@@ -47,9 +47,9 @@ class MailService {
 
             this.transporter = nodemailer.createTransport(config);
             this.initialized = true;
-            console.log('✓ Mail service initialized successfully');
+            console.log('[OK] Mail service initialized successfully');
         } catch (error) {
-            console.error('✗ Mail service initialization failed:', error.message);
+            console.error('[ERROR] Mail service initialization failed:', error.message);
             this.initialized = false;
         }
     }
@@ -98,11 +98,11 @@ class MailService {
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
                 const info = await this.transporter.sendMail(mailOptions);
-                console.log(`✓ Email sent successfully: ${info.messageId} to ${options.to}`);
+                console.log(`[OK] Email sent successfully: ${info.messageId} to ${options.to}`);
                 return { success: true, messageId: info.messageId };
             } catch (error) {
                 lastError = error;
-                console.warn(`⚠ Email send attempt ${attempt + 1} failed:`, {
+                console.warn(`[WARN] Email send attempt ${attempt + 1} failed:`, {
                     message: error.message,
                     code: error.code,
                     to: options.to
@@ -117,7 +117,7 @@ class MailService {
         }
 
         // All retries failed
-        console.error('✗ Email sending failed after retries:', {
+        console.error('[ERROR] Email sending failed after retries:', {
             message: lastError.message,
             code: lastError.code,
             to: options.to,

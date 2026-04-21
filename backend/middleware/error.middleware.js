@@ -97,7 +97,7 @@ const errorHandler = (err, req, res, next) => {
 
     // Log error for debugging
     if (process.env.NODE_ENV === 'development') {
-        console.error('ERROR 💥:', err);
+        console.error('ERROR:', err);
     } else {
         console.error('ERROR:', err.message);
     }

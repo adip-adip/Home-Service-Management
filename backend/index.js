@@ -24,16 +24,16 @@ const gracefulShutdown = (server) => {
 
     signals.forEach(signal => {
         process.on(signal, async () => {
-            console.log(`\n📛 Received ${signal}. Starting graceful shutdown...`);
+            console.log(`\n[INFO] Received ${signal}. Starting graceful shutdown...`);
 
             server.close(() => {
-                console.log('✅ HTTP server closed');
+                console.log('[OK] HTTP server closed');
                 process.exit(0);
             });
 
             // Force close after 30 seconds
             setTimeout(() => {
-                console.error('⚠️ Could not close connections in time, forcefully shutting down');
+                console.error('[WARN] Could not close connections in time, forcefully shutting down');
                 process.exit(1);
             }, 30000);
         });
@@ -44,7 +44,7 @@ const gracefulShutdown = (server) => {
  * Handle uncaught exceptions
  */
 process.on('uncaughtException', (error) => {
-    console.error('❌ UNCAUGHT EXCEPTION! Shutting down...');
+    console.error('[ERROR] UNCAUGHT EXCEPTION! Shutting down...');
     console.error(error.name, error.message);
     console.error(error.stack);
     process.exit(1);
@@ -54,7 +54,7 @@ process.on('uncaughtException', (error) => {
  * Handle unhandled promise rejections
  */
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ UNHANDLED REJECTION! Shutting down...');
+    console.error('[ERROR] UNHANDLED REJECTION! Shutting down...');
     console.error('Reason:', reason);
     process.exit(1);
 });
@@ -64,11 +64,11 @@ process.on('unhandledRejection', (reason, promise) => {
  */
 async function startServer() {
     try {
-        console.log('\n🚀 Starting Home Service Platform Backend...\n');
+        console.log('\n[START] Starting Home Service Platform Backend...\n');
 
         // Set timezone
         process.env.TZ = process.env.TZ || 'Asia/Kathmandu';
-        console.log(`⏰ Timezone: ${process.env.TZ}`);
+        console.log(`[TIME] Timezone: ${process.env.TZ}`);
 
         // Connect to MongoDB
         await connectDB();
@@ -93,10 +93,10 @@ async function startServer() {
         // Start HTTP server
         server.listen(PORT, () => {
             console.log('\n========================================');
-            console.log(`🌟 Server running in ${NODE_ENV} mode`);
-            console.log(`🔗 URL: http://localhost:${PORT}`);
-            console.log(`📚 API: http://localhost:${PORT}/api/v1`);
-            console.log(`❤️  Health: http://localhost:${PORT}/health`);
+            console.log(`[OK] Server running in ${NODE_ENV} mode`);
+            console.log(`[URL] http://localhost:${PORT}`);
+            console.log(`[API] http://localhost:${PORT}/api/v1`);
+            console.log(`[HEALTH] http://localhost:${PORT}/health`);
             console.log('========================================\n');
         });
 
@@ -110,7 +110,7 @@ async function startServer() {
 
         return server;
     } catch (error) {
-        console.error('❌ Failed to start server:', error);
+        console.error('[ERROR] Failed to start server:', error);
         process.exit(1);
     }
 }

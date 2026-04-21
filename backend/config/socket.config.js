@@ -75,7 +75,7 @@ const initializeSocket = (server) => {
     // Connection handler
     io.on('connection', (socket) => {
         const userId = socket.userId;
-        console.log(`🔌 User connected: ${userId} (socket: ${socket.id})`);
+        console.log(`[SOCKET] User connected: ${userId} (socket: ${socket.id})`);
 
         // Track user socket
         if (!userSockets.has(userId)) {
@@ -92,7 +92,7 @@ const initializeSocket = (server) => {
 
         // Handle disconnect
         socket.on('disconnect', (reason) => {
-            console.log(`🔌 User disconnected: ${userId} (reason: ${reason})`);
+            console.log(`[SOCKET] User disconnected: ${userId} (reason: ${reason})`);
 
             // Remove from tracking
             const userSocketSet = userSockets.get(userId);
@@ -120,7 +120,7 @@ const initializeSocket = (server) => {
         });
     });
 
-    console.log('🔌 Socket.IO initialized');
+    console.log('[SOCKET] Socket.IO initialized');
     return io;
 };
 

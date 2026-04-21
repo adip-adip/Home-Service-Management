@@ -12,7 +12,7 @@ const configureCloudinary = () => {
         api_secret: process.env.CLOUDINARY_SECRET
     });
 
-    console.log('☁️ Cloudinary configured successfully');
+    console.log('[OK] Cloudinary configured successfully');
     return cloudinary;
 };
 

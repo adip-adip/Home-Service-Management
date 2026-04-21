@@ -300,7 +300,7 @@ const sampleCustomers = [
  * Seed permissions
  */
 async function seedPermissions() {
-    console.log('🔐 Seeding permissions...');
+    console.log('[SEED] Seeding permissions...');
 
     for (const permission of permissionDefinitions) {
         await Permission.findOneAndUpdate(
@@ -310,14 +310,14 @@ async function seedPermissions() {
         );
     }
 
-    console.log(`✅ ${permissionDefinitions.length} permissions seeded`);
+    console.log(`[OK] ${permissionDefinitions.length} permissions seeded`);
 }
 
 /**
  * Seed roles with permissions
  */
 async function seedRoles() {
-    console.log('👥 Seeding roles...');
+    console.log('[SEED] Seeding roles...');
 
     for (const roleDef of roleDefinitions) {
         // Get permission IDs for this role
@@ -332,19 +332,19 @@ async function seedRoles() {
         );
     }
 
-    console.log(`✅ ${roleDefinitions.length} roles seeded`);
+    console.log(`[OK] ${roleDefinitions.length} roles seeded`);
 }
 
 /**
  * Seed admin user
  */
 async function seedAdmin() {
-    console.log('👤 Seeding admin user...');
+    console.log('[SEED] Seeding admin user...');
 
     const existingAdmin = await User.findOne({ email: defaultAdmin.email });
     
     if (existingAdmin) {
-        console.log('ℹ️ Admin user already exists');
+        console.log('[INFO] Admin user already exists');
         return;
     }
 
@@ -354,7 +354,7 @@ async function seedAdmin() {
     };
 
     await User.create(adminData);
-    console.log('✅ Admin user created');
+    console.log('[OK] Admin user created');
     console.log(`   Email: ${defaultAdmin.email}`);
     console.log(`   Password: ${defaultAdmin.password}`);
 }
@@ -364,11 +364,11 @@ async function seedAdmin() {
  */
 async function seedSampleData() {
     if (process.env.NODE_ENV === 'production') {
-        console.log('⚠️ Skipping sample data in production');
+        console.log('[WARN] Skipping sample data in production');
         return;
     }
 
-    console.log('📦 Seeding sample data...');
+    console.log('[SEED] Seeding sample data...');
 
     // Seed employees
     for (const employee of sampleEmployees) {
@@ -378,7 +378,7 @@ async function seedSampleData() {
                 ...employee,
                 permissions: ROLE_PERMISSIONS[ROLES.EMPLOYEE]
             });
-            console.log(`   ✅ Employee created: ${employee.email}`);
+            console.log(`   [OK] Employee created: ${employee.email}`);
         }
     }
 
@@ -390,11 +390,11 @@ async function seedSampleData() {
                 ...customer,
                 permissions: ROLE_PERMISSIONS[ROLES.CUSTOMER]
             });
-            console.log(`   ✅ Customer created: ${customer.email}`);
+            console.log(`   [OK] Customer created: ${customer.email}`);
         }
     }
 
-    console.log('✅ Sample data seeded');
+    console.log('[OK] Sample data seeded');
 }
 
 /**
@@ -402,16 +402,16 @@ async function seedSampleData() {
  */
 async function runSeeder() {
     try {
-        console.log('\n🌱 Starting database seeder...\n');
+        console.log('\n[START] Starting database seeder...\n');
 
         await seedPermissions();
         await seedRoles();
         await seedAdmin();
         await seedSampleData();
 
-        console.log('\n🎉 Database seeding completed successfully!\n');
+        console.log('\n[DONE] Database seeding completed successfully!\n');
     } catch (error) {
-        console.error('❌ Seeding failed:', error);
+        console.error('[ERROR] Seeding failed:', error);
         throw error;
     }
 }
@@ -426,21 +426,21 @@ async function main() {
     const dbName = process.env.MONGODB_NAME;
 
     if (!mongoURL) {
-        console.error('❌ MONGODB_URL not defined');
+        console.error('[ERROR] MONGODB_URL not defined');
         process.exit(1);
     }
 
     try {
         await mongoose.connect(mongoURL, { dbName });
-        console.log('✅ Connected to MongoDB');
+        console.log('[OK] Connected to MongoDB');
 
         await runSeeder();
 
         await mongoose.disconnect();
-        console.log('✅ Disconnected from MongoDB');
+        console.log('[OK] Disconnected from MongoDB');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('[ERROR] Error:', error);
         process.exit(1);
     }
 }

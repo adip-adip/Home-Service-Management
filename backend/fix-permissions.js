@@ -13,18 +13,18 @@ async function checkAndFixUserPermissions() {
         // Connect to MongoDB
         const mongoUri = process.env.MONGODB_URL + process.env.MONGODB_NAME || 'mongodb://localhost:27017/home-service';
         await mongoose.connect(mongoUri);
-        console.log('📦 Connected to MongoDB');
+        console.log('[DB] Connected to MongoDB');
 
         // Find the employee user
         const employeeEmail = 'ram.plumber@example.com';
         const employee = await User.findOne({ email: employeeEmail });
 
         if (!employee) {
-            console.log('❌ Employee not found with email:', employeeEmail);
+            console.log('[ERROR] Employee not found with email:', employeeEmail);
             return;
         }
 
-        console.log('\n📋 Current Employee Data:');
+        console.log('\n[DATA] Current Employee Data:');
         console.log('ID:', employee._id);
         console.log('Name:', employee.firstName, employee.lastName);
         console.log('Email:', employee.email);
@@ -40,7 +40,7 @@ async function checkAndFixUserPermissions() {
         );
 
         if (!hasCorrectPermissions || !employee.permissions || employee.permissions.length === 0) {
-            console.log('\n🔧 Fixing permissions...');
+            console.log('\n[FIX] Fixing permissions...');
             
             // Update user with correct permissions
             await User.findByIdAndUpdate(employee._id, {
@@ -49,19 +49,19 @@ async function checkAndFixUserPermissions() {
                 status: 'active'
             });
 
-            console.log('✅ Permissions updated successfully!');
+            console.log('[OK] Permissions updated successfully!');
             
             // Verify the update
             const updatedEmployee = await User.findById(employee._id);
-            console.log('\n📋 Updated Employee Data:');
+            console.log('\n[DATA] Updated Employee Data:');
             console.log('Role:', updatedEmployee.role);
             console.log('Permissions:', updatedEmployee.permissions);
         } else {
-            console.log('✅ Employee permissions are already correct!');
+            console.log('[OK] Employee permissions are already correct!');
         }
 
         // Check all employees
-        console.log('\n📋 Checking all employees...');
+        console.log('\n[CHECK] Checking all employees...');
         const allEmployees = await User.find({ role: ROLES.EMPLOYEE });
         
         for (const emp of allEmployees) {
@@ -70,21 +70,21 @@ async function checkAndFixUserPermissions() {
             );
             
             if (!hasCorrectPerms) {
-                console.log(`🔧 Fixing permissions for: ${emp.email}`);
+                console.log(`[FIX] Fixing permissions for: ${emp.email}`);
                 await User.findByIdAndUpdate(emp._id, {
                     permissions: expectedPermissions
                 });
-                console.log(`✅ Fixed permissions for: ${emp.email}`);
+                console.log(`[OK] Fixed permissions for: ${emp.email}`);
             } else {
-                console.log(`✅ ${emp.email} has correct permissions`);
+                console.log(`[OK] ${emp.email} has correct permissions`);
             }
         }
 
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('[ERROR] Error:', error);
     } finally {
         await mongoose.connection.close();
-        console.log('\n📦 Database connection closed');
+        console.log('\n[DB] Database connection closed');
     }
 }
 

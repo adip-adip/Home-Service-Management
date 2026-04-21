@@ -47,7 +47,7 @@ const configureRoutes = (app) => {
         });
     });
 
-    console.log('🛣️ Routes configured successfully');
+    console.log('[OK] Routes configured successfully');
 };
 
 module.exports = { configureRoutes };
